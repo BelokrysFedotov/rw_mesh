@@ -37,6 +37,10 @@ typedef INT INT8[8];
 #define __save_locale char*oldlocale = setlocale(LC_NUMERIC, "C")
 #define __load_locale setlocale(LC_NUMERIC, oldlocale)
 
+#ifndef ffree
+#define ffree(pointer) if(pointer){free(pointer);pointer=NULL;}
+#endif
+
 void rw_mesh_set_filename(char*filename);
 void rw_mesh_set_error(int lineNumber,char*error);
 void rw_mesh_get_error(int*lineNumber,char*error,char*filename);

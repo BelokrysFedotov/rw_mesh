@@ -12,16 +12,18 @@
 #include <stdlib.h>
 #include "rw_mesh_off.h"
 
+
+//TODO add filter for comments
 int read_format_off(
 			int*CountOfPoints, REAL**Points,int* PointsDimention,
 			int*EnablePointsFunction,REAL**PointsFunction,
-			int*EnablePointsNormals,REAL**PointsNormals,
+			int*EnablePointsNormal,REAL**PointsNormal,
 			int*EnablePointsMaterial,int**PointsMaterial,
 			int*EnablePointsColor,REAL4**PointsColor,
 			int*EnablePointsTextureCoords,REAL2**PointsTextureCoords,
-			int*CountOfFaces, int**Faces,int**FaceSizes,
-			int*EnableFacesMaterial, int**FacesMaterials,
-			int*EnableFacesColors,REAL4**FacesColors,
+			int*CountOfFaces, int**Faces,int**FacesSizes,
+			int*EnableFacesMaterial, int**FacesMaterial,
+			int*EnableFacesColor,REAL4**FacesColor,
 			char*filename){
 	__save_locale;
 
@@ -29,7 +31,7 @@ int read_format_off(
 	int i,j,k;
 	int a,b,c;
 	int p,f;
-	REAL x,y,z;
+	int rn;
 
 	char line[256];
 	char word[256];
@@ -41,7 +43,7 @@ int read_format_off(
 	int enablePointsColor;
 	int enablePointsColor_color;
 	int enablePointsColor_material;
-	int enablePointsNormals;
+	int enablePointsNormal;
 	int enablePoints4;
 	int enablePointsn;
 	int pointsDimention;
@@ -49,7 +51,7 @@ int read_format_off(
 	int countOfPoints;
 	REAL*points;
 	REAL*pointsFunction;
-	REAL*pointsNormals;
+	REAL*pointsNormal;
 	int*pointsMaterial;
 	REAL4*pointsColor;
 	REAL2*pointsTextureCoords;
@@ -66,7 +68,19 @@ int read_format_off(
 
 	int countOfEdges;
 
+	points = NULL;
+	pointsFunction = NULL;
+	pointsNormal = NULL;
+	pointsColor = NULL;
+	pointsMaterial = NULL;
 
+	faces = NULL;
+	faces_allocated = 0;
+	facesSizes = NULL;
+	facesColor = NULL;
+	facesMaterial = NULL;
+
+#define _error_free_mem ffree(points);ffree(pointsFunction);ffree(pointsNormal);ffree(pointsColor);ffree(pointsMaterial);ffree(pointsTextureCoords);ffree(facesSizes);ffree(facesColor);ffree(facesMaterial);
 
 
 	rw_mesh_set_filename(filename);
@@ -91,13 +105,13 @@ int read_format_off(
 		enablePointsColor = 1;
 		linepos++;
 	}
-	//Check enablePointsNormals
-	enablePointsNormals = 0;
+	//Check enablePointsNormal
+	enablePointsNormal = 0;
 	if(line[linepos]=='N'){
-		enablePointsNormals = 1;
+		enablePointsNormal = 1;
 		linepos++;
 	}
-	//Check enablePoints4
+	//Check enablePoints4 / Function
 	enablePoints4 = 0;
 	if(line[linepos]=='4'){
 		enablePoints4 = 1;
@@ -114,7 +128,7 @@ int read_format_off(
 
 	}else{
 		//it isnt OFF header
-		rw_mesh_set_error(linepos,"It isnt OFF header");
+		rw_mesh_set_error(linepos,"It isn't OFF header");
 		return 2;
 	}
 
@@ -122,9 +136,13 @@ int read_format_off(
 
 	pointsDimention = 3;
 	if(string_is_integer(line)){
-		pointsDimention = atoi(line);
+		rn = sscanf(line,"%d",&pointsDimention);
+		if(rn != 1){
+			rw_mesh_set_error(linepos,"Can't read Ndim");
+			return 3;
+		}
 		if(pointsDimention<1){
-			rw_mesh_set_error(linepos,"Ndim < 1");
+			rw_mesh_set_error(linepos,"Ndim must be more than 0");
 			return 3;
 		}
 		//read next line
@@ -132,7 +150,7 @@ int read_format_off(
 	}else if(enablePointsn){
 		// Dont set Ndim
 		// Возможно просто пропускать этот факт и считать размерность==3
-		rw_mesh_set_error(linepos,"Dont set Ndim");
+		rw_mesh_set_error(linepos,"Didn't set Ndim");
 		return 3;
 	}
 
@@ -140,15 +158,14 @@ int read_format_off(
 	// already readed line
 	//read_line_trim(fd,line);
 
-	i = sscanf(line,"%d %d %d",&countOfPoints,&countOfFaces,&countOfEdges);
-	if(i!=3){
-		rw_mesh_set_error(linepos,"Cant read count of points, faces and edges");
+	rn = sscanf(line,"%d %d %d",&countOfPoints,&countOfFaces,&countOfEdges);
+	if(rn!=3){
+		rw_mesh_set_error(linepos,"Can't read count of points, faces and edges.");
 		return 3;
 	}
 
 	if(countOfPoints>0){
 		//reading points
-
 
 		b = 0; //counts of non colored values
 		points = (REAL*)calloc(pointsDimention*countOfPoints,sizeof(REAL));
@@ -157,8 +174,8 @@ int read_format_off(
 			pointsFunction = (REAL*)calloc(countOfPoints,sizeof(REAL));
 			b++;
 		}
-		if(enablePointsNormals){
-			pointsNormals = (REAL*)calloc(pointsDimention*countOfPoints,sizeof(REAL));
+		if(enablePointsNormal){
+			pointsNormal = (REAL*)calloc(pointsDimention*countOfPoints,sizeof(REAL));
 			b+=pointsDimention;
 		}
 		if(enablePointsColor){
@@ -173,6 +190,7 @@ int read_format_off(
 		}
 
 		for(p = 0; p < countOfPoints; p++){
+			//read new point
 			read_line_trim(fd,line); current_line++;
 
 			c = string_count_of_words(line);
@@ -181,35 +199,48 @@ int read_format_off(
 					(!enablePointsColor && b!=c) ||
 					(enablePointsColor && ( (c==b+1) || (c==b+3) || (c==b+4) ) )
 					){
-				free(points);
-				if(enablePoints4)free(pointsFunction);
-				if(enablePointsNormals)free(pointsNormals);
-				if(enablePointsColor){free(pointsColor);free(pointsMaterial);}
-				if(enablePointsTextureCoords)free(pointsTextureCoords);
+				_error_free_mem
 				if(enablePointsColor){
-					sprintf(line_error,"Cant read data of points. It's must be %d,%d or %d values, but finded %d.",b+1,b+3,b+4,c);
+					sprintf(line_error,"Cant read data of points. It's must be %d,%d or %d values, but found %d.",b+1,b+3,b+4,c);
 				}else{
 					sprintf(line_error,"Cant read data of points. It's must be %d values, but finded %d.",b,c);
 				}
 				rw_mesh_set_error(linepos,line_error);
-				return 3;
+				return 4;
 			}
 
 			for(k=0;k<pointsDimention;k++){
 				string_cut_word(line,word);
-//				points[p*pointsDimention+k] = atof(word);
-				sscanf(word,"%lf",points+p*pointsDimention+k);
+				rn = sscanf(word,"%lf",points+p*pointsDimention+k);
+				if(rn!=1){
+					sprintf(line_error,"Can't read point's #%d coords %d: `%s`",p,k,word);
+					rw_mesh_set_error(linepos,line_error);
+					_error_free_mem
+					return 5;
+				}
 			}
 
 			if(enablePoints4){
 				string_cut_word(line,word);
-				sscanf(word,"%lf",pointsFunction+p);
+				rn = sscanf(word,"%lf",pointsFunction+p);
+				if(rn!=1){
+					sprintf(line_error,"Can't read point's #%d function: `%s`",p,word);
+					rw_mesh_set_error(linepos,line_error);
+					_error_free_mem
+					return 6;
+				}
 			}
 
-			if(enablePointsNormals){
+			if(enablePointsNormal){
 				for(k=0;k<pointsDimention;k++){
 					string_cut_word(line,word);
-					sscanf(word,"%lf",pointsNormals+p*pointsDimention+k);
+					rn = sscanf(word,"%lf",pointsNormal+p*pointsDimention+k);
+					if(rn!=1){
+						sprintf(line_error,"Can't read point's #%d normal's coords %d: `%s`",p,k,word);
+						rw_mesh_set_error(linepos,line_error);
+						_error_free_mem
+						return 7;
+					}
 				}
 			}
 
@@ -217,13 +248,25 @@ int read_format_off(
 				switch(c-b){
 					case 1:
 						string_cut_word(line,word);
-						sscanf(word,"%d",pointsMaterial+p);
+						rn = sscanf(word,"%d",pointsMaterial+p);
 						enablePointsColor_material = 1;
+						if(rn!=1){
+							sprintf(line_error,"Can't read point's #%d material: `%s`",p,word);
+							rw_mesh_set_error(linepos,line_error);
+							_error_free_mem
+							return 8;
+						}
 						break;
 					case 3:
 						for(k=0;k<3;k++){
 							string_cut_word(line,word);
-							sscanf(word,"%lf",pointsColor[p]+k);
+							rn = sscanf(word,"%lf",pointsColor[p]+k);
+							if(rn!=1){
+								sprintf(line_error,"Can't read point's #%d color's component %d: `%s`",p,k,word);
+								rw_mesh_set_error(linepos,line_error);
+								_error_free_mem
+								return 9;
+							}
 						}
 						pointsColor[p][3] = 1.e0;// set default alpha
 						enablePointsColor_color = 1;
@@ -231,7 +274,13 @@ int read_format_off(
 					case 4:
 						for(k=0;k<4;k++){
 							string_cut_word(line,word);
-							sscanf(word,"%lf",pointsColor[p]+k);
+							rn =sscanf(word,"%lf",pointsColor[p]+k);
+							if(rn!=1){
+								sprintf(line_error,"Can't read point's #%d color's component %d: `%s`",p,k,word);
+								rw_mesh_set_error(linepos,line_error);
+								_error_free_mem
+								return 10;
+							}
 						}
 						enablePointsColor_color = 1;
 						break;
@@ -242,57 +291,17 @@ int read_format_off(
 			if(enablePointsTextureCoords){
 				for(k=0;k<2;k++){
 					string_cut_word(line,word);
-					sscanf(word,"%lf",pointsTextureCoords[p]+k);
+					rn = sscanf(word,"%lf",pointsTextureCoords[p]+k);
+					if(rn!=1){
+						sprintf(line_error,"Can't read point's #%d texture coords %d: `%s`",p,k,word);
+						rw_mesh_set_error(linepos,line_error);
+						_error_free_mem
+						return 11;
+					}
 				}
 			}
 
 		};
-
-		if(CountOfPoints)*CountOfPoints = countOfPoints;
-		if(Points){
-			*Points = points;
-		}else{
-			free(points);
-		}
-
-		if(PointsDimention) *PointsDimention = pointsDimention;
-
-		if(EnablePointsFunction) *EnablePointsFunction = enablePoints4;
-		if(PointsFunction){
-			*PointsFunction = pointsFunction;
-		}else if(enablePoints4){
-			free(pointsFunction);
-		}
-
-		if(EnablePointsNormals) *EnablePointsNormals = enablePointsNormals;
-		if(PointsNormals){
-			*PointsNormals = pointsNormals;
-		}else if(enablePointsNormals){
-			free(pointsNormals);
-		}
-
-		if(EnablePointsMaterial) *EnablePointsMaterial = enablePointsColor_material;
-		if(PointsMaterial){
-			*PointsMaterial = pointsMaterial;
-		}else if(enablePointsColor){
-			free(pointsMaterial);
-		}
-
-
-		if(EnablePointsColor) *EnablePointsColor = enablePointsColor_color;
-		if(PointsColor){
-			*PointsColor = pointsColor;
-		}else if(enablePointsColor){
-			free(pointsColor);
-		}
-
-
-		if(EnablePointsTextureCoords) *EnablePointsTextureCoords = enablePointsTextureCoords;
-		if(PointsTextureCoords){
-			*PointsTextureCoords = pointsTextureCoords;
-		}else if(enablePointsTextureCoords){
-			free(pointsTextureCoords);
-		}
 
 	}
 
@@ -312,13 +321,19 @@ int read_format_off(
 		for(f = 0 ; f < countOfFaces; f++){
 			read_line_trim(fd,line); current_line++;
 
-			string_cut_word(line,word);//TODO check
+			string_cut_word(line,word);
 
-			sscanf(word,"%d",&i); // size of face
+			rn = sscanf(word,"%d",&i); // size of face
+			if(rn!=1){
+				sprintf(line_error,"Can't read face's #%d size: `%s`",f,word);
+				rw_mesh_set_error(linepos,line_error);
+				_error_free_mem
+				return 12;
+			}
 
-			if(i<=0){
-				//TODO check
-				return 1;
+			if(i<1){
+				_error_free_mem
+				return 13;
 			}
 
 			facesSizes[f+1] = facesSizes[f]+i;
@@ -329,8 +344,14 @@ int read_format_off(
 			}
 
 			for(k=0;k<i;k++){
-				string_cut_word(line,word);//TODO check
-				sscanf(word,"%d",faces+facesSizes[f]+k);
+				string_cut_word(line,word);
+				rn = sscanf(word,"%d",faces+facesSizes[f]+k);
+				if(rn!=1){
+					sprintf(line_error,"Can't read face's #%d component %d: `%s`",f,k,word);
+					rw_mesh_set_error(linepos,line_error);
+					_error_free_mem
+					return 14;
+				}
 			}
 
 			c = string_count_of_words(line);
@@ -339,13 +360,25 @@ int read_format_off(
 				case 1:
 					enableFacesColor_material = 1;
 					string_cut_word(line,word);
-					sscanf(word,"%d",facesMaterial+f);
+					rn = sscanf(word,"%d",facesMaterial+f);
+					if(rn!=1){
+						sprintf(line_error,"Can't read face's #%d material: `%s`",f,word);
+						rw_mesh_set_error(linepos,line_error);
+						_error_free_mem
+						return 15;
+					}
 					break;
 				case 3:
 					enableFacesColor_color = 1;
 					for(k=0;k<3;k++){
 						string_cut_word(line,word);
-						sscanf(word,"%lf",facesColor[f]+k);
+						rn = sscanf(word,"%lf",facesColor[f]+k);
+						if(rn!=1){
+							sprintf(line_error,"Can't read face's #%d color component %d: `%s`",f,k,word);
+							rw_mesh_set_error(linepos,line_error);
+							_error_free_mem
+							return 16;
+						}
 					}
 					facesColor[f][3] = 1.e0;
 					break;
@@ -353,7 +386,13 @@ int read_format_off(
 					enableFacesColor_color = 1;
 					for(k=0;k<4;k++){
 						string_cut_word(line,word);
-						sscanf(word,"%lf",facesColor[f]+k);
+						rn = sscanf(word,"%lf",facesColor[f]+k);
+						if(rn!=1){
+							sprintf(line_error,"Can't read face's #%d color component %d: `%s`",f,k,word);
+							rw_mesh_set_error(linepos,line_error);
+							_error_free_mem
+							return 17;
+						}
 					}
 					break;
 			}
@@ -365,32 +404,82 @@ int read_format_off(
 			faces = (int*)realloc(faces,faces_allocated*sizeof(int));
 		}
 
+	}
+
+	if(countOfPoints>0){
+		if(CountOfPoints)*CountOfPoints = countOfPoints;
+		if(Points){
+			*Points = points;
+		}else{
+			ffree(points);
+		}
+
+		if(PointsDimention) *PointsDimention = pointsDimention;
+
+		if(EnablePointsFunction) *EnablePointsFunction = enablePoints4;
+		if(PointsFunction){
+			*PointsFunction = pointsFunction;
+		}else if(enablePoints4){
+			ffree(pointsFunction);
+		}
+
+		if(EnablePointsNormal) *EnablePointsNormal = enablePointsNormal;
+		if(PointsNormal){
+			*PointsNormal = pointsNormal;
+		}else if(enablePointsNormal){
+			ffree(pointsNormal);
+		}
+
+		if(EnablePointsMaterial) *EnablePointsMaterial = enablePointsColor_material;
+		if(PointsMaterial){
+			*PointsMaterial = pointsMaterial;
+		}else if(enablePointsColor){
+			ffree(pointsMaterial);
+		}
+
+
+		if(EnablePointsColor) *EnablePointsColor = enablePointsColor_color;
+		if(PointsColor){
+			*PointsColor = pointsColor;
+		}else if(enablePointsColor){
+			ffree(pointsColor);
+		}
+
+
+		if(EnablePointsTextureCoords) *EnablePointsTextureCoords = enablePointsTextureCoords;
+		if(PointsTextureCoords){
+			*PointsTextureCoords = pointsTextureCoords;
+		}else if(enablePointsTextureCoords){
+			ffree(pointsTextureCoords);
+		}
+	}
+
+	if(countOfFaces>0){
 		if(CountOfFaces) *CountOfFaces = countOfFaces;
 		if(Faces){
 			*Faces = faces;
 		}else{
-			free(faces);
+			ffree(faces);
 		}
-		if(FaceSizes){
-			*FaceSizes = facesSizes;
+		if(FacesSizes){
+			*FacesSizes = facesSizes;
 		}else{
-			free(facesSizes);
+			ffree(facesSizes);
 		}
 
 		if(EnableFacesMaterial) *EnableFacesMaterial = enableFacesColor_material;
-		if(FacesMaterials){
-			*FacesMaterials = facesMaterial;
+		if(FacesMaterial){
+			*FacesMaterial = facesMaterial;
 		}else{
-			free(facesMaterial);
+			ffree(facesMaterial);
 		}
 
-		if(EnableFacesColors) *EnableFacesColors = enableFacesColor_color;
-		if(FacesColors){
-			*FacesColors = facesColor;
+		if(EnableFacesColor) *EnableFacesColor = enableFacesColor_color;
+		if(FacesColor){
+			*FacesColor = facesColor;
 		}else{
 			free(facesColor);
 		}
-
 	}
 
 

@@ -18,13 +18,13 @@
 int read_format_off(
 			int*CountOfPoints, REAL**Points,int* PointsDimention,
 			int*EnablePointsFunction,REAL**PointsFunction,
-			int*EnablePointsNormals,REAL**PointsNormals,
+			int*EnablePointsNormal,REAL**PointsNormal,
 			int*EnablePointsMaterial,int**PointsMaterial,
 			int*EnablePointsColor,REAL4**PointsColor,
 			int*EnablePointsTextureCoords,REAL2**PointsTextureCoords,
-			int*CountOfFaces, int**Faces,int**FaceSizes,
-			int*EnableFacesMaterial, int**FacesMaterials,
-			int*EnableFacesColors,REAL4**FacesColors,
+			int*CountOfFaces, int**Faces,int**FacesSizes,
+			int*EnableFacesMaterial, int**FacesMaterial,
+			int*EnableFacesColor,REAL4**FacesColor,
 			char*filename);
 /*rw_mesh_off.c*/
 
