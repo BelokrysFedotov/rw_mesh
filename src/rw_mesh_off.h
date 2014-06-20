@@ -26,6 +26,14 @@ int read_format_off(
 			int*EnableFacesMaterial, int**FacesMaterial,
 			int*EnableFacesColor,REAL4**FacesColor,
 			char*filename);
+
+int write_format_off(
+		int CountOfPoints, REAL*Points,int PointsDimention,
+		REAL*PointsFunction,REAL*PointsNormal,int*PointsMaterial,REAL4*PointsColor,REAL2*PointsTextureCoords,
+		int CountOfFaces, int*Faces,int*FacesSizes,
+		int*FacesMaterial,REAL4*FacesColor,
+		char*filename);
+
 /*rw_mesh_off.c*/
 
 

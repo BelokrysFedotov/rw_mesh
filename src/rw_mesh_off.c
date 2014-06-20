@@ -82,7 +82,6 @@ int read_format_off(
 
 #define _error_free_mem ffree(points);ffree(pointsFunction);ffree(pointsNormal);ffree(pointsColor);ffree(pointsMaterial);ffree(pointsTextureCoords);ffree(facesSizes);ffree(facesColor);ffree(facesMaterial);
 
-
 	rw_mesh_set_filename(filename);
 	fd=fopen(filename,"r");if(fd==NULL){
 		rw_mesh_set_error(0,"Can't find file");
@@ -482,12 +481,97 @@ int read_format_off(
 		}
 	}
 
+	__load_locale;
+
+#undef _error_free_mem
+
+	return 0;
+}
+
+/**
+ * Write data to file in format OFF
+ * ! If set PointsMaterial, PointsColor is ignored
+ * ! If set FacesMaterial, FacesColor is ignored
+ */
+int write_format_off(
+		int CountOfPoints, REAL*Points,int PointsDimention,
+		REAL*PointsFunction,REAL*PointsNormal,int*PointsMaterial,REAL4*PointsColor,REAL2*PointsTextureCoords,
+		int CountOfFaces, int*Faces,int*FacesSizes,
+		int*FacesMaterial,REAL4*FacesColor,
+		char*filename){
+
+	__save_locale;
+
+	FILE*fd;
+	int i,j,k;
+	int a,b,c;
+	int p,f;
+
+	char line[256];
+
+	rw_mesh_set_filename(filename);
+	fd=fopen(filename,"w");if(fd==NULL){
+		rw_mesh_set_error(0,"Can't find file");
+		return 1;
+	}
+
+	strcpy(line,"");
+	// [ST][C][N][4][n]OFF
+	if(PointsTextureCoords)
+		strcat(line,"ST");
+	if(PointsMaterial || PointsColor)
+		strcat(line,"C");
+	if(PointsNormal)
+		strcat(line,"N");
+	if(PointsFunction)
+		strcat(line,"4");
+	if(PointsDimention!=3)
+		strcat(line,"n");
+
+	fprintf(fd,"%s\n",line);
+
+	if(PointsDimention!=3)
+		fprintf(fd,"%d\n",PointsDimention);
+
+	fprintf(fd,"%d %d %d\n",CountOfPoints,CountOfFaces,0);
+
+	if(CountOfPoints)for(p=0;p<CountOfPoints;p++){
+		for(k=0;k<PointsDimention;k++)
+			fprintf(fd,"%lf ",Points[p*PointsDimention+k]);
+		if(PointsFunction)
+			fprintf(fd,"%lf ",PointsFunction[p]);
+		if(PointsNormal)
+			for(k=0;k<PointsDimention;k++)
+				fprintf(fd,"%lf ",PointsNormal[p*PointsDimention+k]);
+		if(PointsMaterial){
+			fprintf(fd,"%d ",PointsMaterial[p]);
+		}else if(PointsColor){
+			for(k=0;k<4;k++)
+				fprintf(fd,"%lf ",PointsColor[p][k]);
+		}
+
+		if(PointsTextureCoords)
+			for(k=0;k<2;k++)
+				fprintf(fd,"%lf ",PointsTextureCoords[p][k]);
+		fprintf(fd,"\n");
+	}
+
+	if(CountOfFaces)for(f=0;f<CountOfFaces;f++){
+		fprintf(fd,"%d",FacesSizes[f+1]-FacesSizes[f]);
+		for(k=0;k<FacesSizes[f+1]-FacesSizes[f];k++)
+			fprintf(fd," %d",Faces[FacesSizes[f]+k]);
+		if(FacesMaterial){
+			fprintf(fd,"%d ",FacesMaterial[f]);
+		}else if(FacesColor){
+			for(k=0;k<4;k++)
+				fprintf(fd,"%lf ",FacesColor[p][k]);
+		}
+	}
 
 	__load_locale;
 
 	return 0;
 }
-
 
 
 
