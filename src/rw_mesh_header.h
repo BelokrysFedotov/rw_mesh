@@ -20,7 +20,7 @@ typedef double REAL;
 
 typedef REAL REAL2[2];
 typedef REAL REAL3[3];
-typedef REAL REAL4[3];
+typedef REAL REAL4[4];
 
 
 typedef int INT;
