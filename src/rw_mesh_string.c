@@ -35,7 +35,7 @@ int read_line (FILE * STREAM, char *line){
  * Найти символ в наборе символов и вывести его индекс
  * или вернуть -1, если не найдено
  */
-int in_charset(const char c,const char*charset){
+inline int in_charset(const char c,const char*charset){
 	int i;
 	i=0;
 	while(i<255 && charset[i]!='\0'){
@@ -93,7 +93,7 @@ int string_trim_charset(char*line,const char*charset){
  * Удаляет пробельные символы c концов строки
  */
 int string_trim(char*line){
-	return string_trim_charset(line," \t\r\n\x0B");
+	return string_trim_charset(line,CHARSET_SPACE);
 }
 
 /**
@@ -151,14 +151,14 @@ int string_count_of_words(const char*string){
 
 	i=0;
 	if(string[i]=='\0')return 0;
-	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)>=0)i++;
+	while(string[i]!='\0' && _char_in_charset_CHARSET_SPACE(string[i]))i++;
 	if(string[i]=='\0')return 0;
 
 	s = 1;
 	count = 1;
 
 	while(string[i]!='\0'){
-		if(in_charset(string[i],CHARSET_SPACE)>=0){
+		if(_char_in_charset_CHARSET_SPACE(string[i])){
 			if(s){
 				s = 0;
 			}
@@ -184,11 +184,11 @@ int string_get_word(char*string,char*word){
 
 	word[0]='\0';
 	if(string[i]=='\0')return 0;
-	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)>=0)i++;
+	while(string[i]!='\0' && _char_in_charset_CHARSET_SPACE(string[i]))i++;
 
 	j = i;
 	k = 0;
-	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)<0){
+	while(string[i]!='\0' && !_char_in_charset_CHARSET_SPACE(string[i])){
 		word[k] = string[i];
 		i++;k++;
 	}
@@ -207,7 +207,7 @@ int string_cut_word(char*string,char*word){
 
 	word[0]='\0';
 	if(string[i]=='\0')return 0;
-	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)>=0)i++;
+	while(string[i]!='\0' && _char_in_charset_CHARSET_SPACE(string[i]))i++;
 	if(string[i]=='\0'){
 		string[0]='\0';
 		return 0;
@@ -215,14 +215,14 @@ int string_cut_word(char*string,char*word){
 
 	j = i;
 	k = 0;
-	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)<0){
+	while(string[i]!='\0' && !_char_in_charset_CHARSET_SPACE(string[i])){
 		word[k] = string[i];
 		i++;
 		k++;
 	}
 	word[k] = '\0';
 
-	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)>=0)i++;
+	while(string[i]!='\0' && _char_in_charset_CHARSET_SPACE(string[i]))i++;
 
 	k=0;
 	while(string[i]!='\0'){
