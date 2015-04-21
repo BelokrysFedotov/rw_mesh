@@ -14,8 +14,9 @@ extern "C" {
 }
 
 TEST(Test, in_charset){
-    ASSERT_LT(in_charset('a',CHARSET_SPACE), 0);
-    ASSERT_LT(in_charset('0',CHARSET_SPACE), 0);
+
+	ASSERT_LT(in_charset('a',CHARSET_SPACE), 0);
+	ASSERT_LT(in_charset('0',CHARSET_SPACE), 0);
     ASSERT_LT(in_charset('9',CHARSET_SPACE), 0);
     ASSERT_GE(in_charset(' ',CHARSET_SPACE), 0);
     ASSERT_GE(in_charset('\t',CHARSET_SPACE), 0);

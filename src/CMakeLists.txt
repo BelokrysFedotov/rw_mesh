@@ -10,6 +10,7 @@ set ( LIBRARY_SOURCE_FILES
 	rw_mesh_string.c
 	rw_mesh_off.c
 	rw_mesh_mesh.c
+	rw_mesh_vtk.c
 	rw_mesh.c
 )
 

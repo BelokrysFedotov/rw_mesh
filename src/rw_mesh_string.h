@@ -25,8 +25,11 @@ int string_rtrim_charset(char*line,const char*charset);
 int string_trim_charset(char*line,const char*charset);
 int string_trim(char*line);
 int read_line_trim (FILE * STREAM, char *line);
+int read_line_skip_null (FILE * STREAM, char *line,int*linecounter);
+int read_line_skip_empty (FILE * STREAM, char *line,int*linecounter);
 int string_is_integer(const char*string);
 int string_count_of_words(const char*string);
+int string_get_word(char*string,char*word);
 int string_cut_word(char*string,char*word);
 
 #endif /* RW_MESH_STRING_H_ */

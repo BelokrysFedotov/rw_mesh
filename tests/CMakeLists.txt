@@ -19,10 +19,18 @@ add_executable(test_string_gtest string/string.cpp)
 target_link_libraries (test_string_gtest ${GLIBS})
 add_test(test_string_gtest test_string_gtest)
 
-
 add_executable(test_read_off off/test_off_read.cpp)
 add_definitions(-DWORK_DIRECTORY="${CMAKE_SOURCE_DIR}/")
 target_link_libraries (test_read_off ${GLIBS})
 add_test(test_read_off test_read_off)
 #add_test(test_read_off.Test.cube3off test_read_off --gtest_filter Test.cube3off)
 #add_test(test_read_off.Test.octaoff test_read_off --gtest_filter Test.octaoff)
+
+add_executable(test_read_vtk vtk/test_vtk_read.cpp)
+add_definitions(-DWORK_DIRECTORY="${CMAKE_SOURCE_DIR}/")
+target_link_libraries (test_read_vtk ${GLIBS})
+add_test(test_read_vtk test_read_vtk)
+
+add_executable (read_vtk_file vtk/read_vtk_file.c)
+target_link_libraries (read_vtk_file ${LIBS})
+

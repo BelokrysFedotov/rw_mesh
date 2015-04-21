@@ -14,7 +14,6 @@
 #define EXTENTION_OFF "*\.off"
 #define EXTENTION_OFF_EXT "*\.(st|c|n|4)*off"
 
-/*rw_mesh_off.c*/
 int read_format_off(
 			int*CountOfPoints, REAL**Points,int* PointsDimention,
 			int*EnablePointsFunction,REAL**PointsFunction,
@@ -34,7 +33,4 @@ int write_format_off(
 		int*FacesMaterial,REAL4*FacesColor,
 		char*filename);
 
-/*rw_mesh_off.c*/
-
-
-#endif /* RW_MESH_MESH_H_ */
+#endif /* RW_MESH_OFF_H_ */

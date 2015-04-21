@@ -18,7 +18,7 @@
  */
 int read_line (FILE * STREAM, char *line){
   int i;
-
+  *line = 0;
   if (fgets (line, 256, STREAM) == NULL)
       return (-1);
 
@@ -100,8 +100,36 @@ int string_trim(char*line){
  * Прочитать из потока строку и удалить пробелные символы на концах
  */
 int read_line_trim (FILE * STREAM, char *line){
-	if(!read_line(STREAM,line))return 0;
+	int r;
+	r = read_line(STREAM,line);
+	if(r<0)return r;
+	if(r==0)return r;
 	return string_trim(line);
+}
+
+/**
+ * Прочитать из потока первую не нулевую строку
+ */
+int read_line_skip_null (FILE * STREAM, char *line,int*linecounter){
+	//TODO add to tests
+	int r;
+	while((r=read_line(STREAM,line))==0)
+		if(linecounter)*linecounter = *linecounter+1;
+	if(r>=0)if(linecounter)*linecounter = *linecounter+1;
+	return r;
+}
+
+/**
+ * Прочитать из потока первую не пустую строку.
+ * Пустая строка - нулевая или состоящая из пробельных символов
+ */
+int read_line_skip_empty (FILE * STREAM, char *line,int*linecounter){
+	//TODO add to tests
+	int r;
+	while((r=read_line_trim(STREAM,line))==0)
+		if(linecounter)*linecounter = *linecounter+1;
+	if(r>=0)if(linecounter)*linecounter = *linecounter+1;
+	return r;
 }
 
 int string_is_integer(const char*string){
@@ -143,6 +171,30 @@ int string_count_of_words(const char*string){
 		i++;
 	}
 	return count;
+}
+
+int string_get_word(char*string,char*word){
+	//TODO add tests
+	int count;
+	int i,j,k;
+
+	count = 0;
+
+	i=0;
+
+	word[0]='\0';
+	if(string[i]=='\0')return 0;
+	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)>=0)i++;
+
+	j = i;
+	k = 0;
+	while(string[i]!='\0' && in_charset(string[i],CHARSET_SPACE)<0){
+		word[k] = string[i];
+		i++;k++;
+	}
+	word[k] = '\0';
+
+	return 1;
 }
 
 int string_cut_word(char*string,char*word){

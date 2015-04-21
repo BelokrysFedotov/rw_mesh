@@ -15,14 +15,6 @@
 #include "rw_mesh_off.h"
 #include "rw_mesh_mesh.h"
 
-
-/*wr_vtk.c*/
-int write_format_vtk(int nv, REAL* v, int* mskv, int dim,
-					 int ncells, int* cells, int* cell_sizes,
-					 int* cell_types, int *cell_mask, char filename[256]);
-int read_format_vtk(int *out_nv, REAL3** out_v, int **out_mskv,
-					int *out_ncells, int** out_cells, int** out_cell_sizes,
-					int **out_cell_types, int **out_cell_mask, char filename[256]);
-/*wr_vtk.c*/
+#include "rw_mesh_vtk.h"
 
 #endif /* RW_MESH_H_ */
