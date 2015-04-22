@@ -36,7 +36,7 @@ public:
 
 	int read_vtk(char*filename){
 		int rn;
-		rn = read_format_vtk_unstructured_in_struct(this->VTK,filename);
+		rn = read_format_vtk_unstructured_in_struct(this->VTK,filename,0);
 		if(rn){
 			rw_mesh_print_error();
 		}
@@ -112,29 +112,95 @@ TEST(Test, visit_rotor_small_ascii_vtk){
 	char filename[256] = FILES_DIRECTORY "visit_rotor_small_ascii.vtk";
 
 	VtkClass D;
+	RW_MESH_VTK_DATA_FIELD_STRUCT*F;
 
 	ASSERT_EQ(0,D.read_vtk(filename));
-//
-//	ASSERT_EQ(322494,D.VTK->CountOfPoints);
-//	ASSERT_EQ(1878692,D.VTK->CountOfCells);
-//
-//	ASSERT_EQ(0,D.VTK->CountOfPointsData);
-//	ASSERT_EQ(0,D.VTK->CountOfCellsData);
-//	ASSERT_EQ(0,D.VTK->CountOfData);
 
-//	__check_point(0,0,-1.0);
-//	__check_point(1,1,-1.0);
-//	__check_point(2,2,-1.0);
-//	__check_point(7,1, 1.0);
-//	__check_point(7,2, 1.0);
+	ASSERT_EQ(322494,D.VTK->CountOfPoints);
+	ASSERT_EQ(1878692,D.VTK->CountOfCells);
 
-//	__check_cell( 0, 0, 0);
-//	__check_cell( 0, 3, 3);
-//	__check_cell( 0, 6, 6);
-//	__check_cell( 0, 7, 7);
+	ASSERT_EQ(1,D.VTK->CountOfPointsData);
+	ASSERT_EQ(0,D.VTK->CountOfCellsData);
+	ASSERT_EQ(1,D.VTK->CountOfData);
 
-//	__check_cell_size( 0, 8);
-//	__check_cell_type( 0, RW_MESH_VTK_CELL_TYPE_HEXAHEDRON);
+
+	ASSERT_EQ(RW_MESH_VTK_DATASET_TYPE_FIELD,D.VTK->PointsData[0].DataType);
+	ASSERT_EQ(1,D.VTK->PointsData[0].Counts);
+	ASSERT_STRCASEEQ("FieldData",D.VTK->PointsData[0].DataName);
+	ASSERT_NE((void*)0,D.VTK->PointsData[0].Data);
+
+	F = (RW_MESH_VTK_DATA_FIELD_STRUCT*)D.VTK->PointsData[0].Data;
+
+
+	ASSERT_EQ(4,F->numArrays);
+
+	ASSERT_EQ(RW_MESH_VTK_TYPE_FLOAT,F->Arrays[0].dataType);
+	ASSERT_STRCASEEQ("X",F->Arrays[0].name);
+	ASSERT_EQ(1,F->Arrays[0].numComponents);
+	ASSERT_EQ(322494,F->Arrays[0].numTuples);
+
+	EXPECT_NEAR(116.065,((float*)F->Arrays[0].values)[0],1.e-5);
+	EXPECT_NEAR(129.861,((float*)F->Arrays[0].values)[10],1.e-5);
+
+	ASSERT_EQ(RW_MESH_VTK_TYPE_FLOAT,F->Arrays[3].dataType);
+	ASSERT_STRCASEEQ("fluid_id",F->Arrays[3].name);
+	ASSERT_EQ(1,F->Arrays[3].numComponents);
+	ASSERT_EQ(322494,F->Arrays[3].numTuples);
+
+	EXPECT_NEAR(4,((float*)F->Arrays[3].values)[2],1.e-5);
+	EXPECT_NEAR(9,((float*)F->Arrays[3].values)[72],1.e-5);
+
+}
+
+TEST(Test, visit_rotor_small_ascii_vtk_s){
+	char filename[256] = FILES_DIRECTORY "visit_rotor_small_ascii.vtk";
+
+	int CountOfPoints;
+	REAL3*Points;
+
+	int CountOfPointMasks;
+	int*PointMasks;
+	int CountOfPointFunctions;
+	REAL*PointFunctions;
+
+	int CountOfCells;
+	int*Cells;
+	int*CellSizes;
+	int*CellTypes;
+	int*CellOffset;
+
+	int CountOfCellMasks;
+	int *CellMasks;
+	int CountOfCellFunctions;
+	REAL*CellFunctions;
+
+	ASSERT_EQ(0,read_format_vtk_unstructured_simplified(
+			&CountOfPoints,&Points,
+			&CountOfPointMasks,&PointMasks,
+			&CountOfPointFunctions,&PointFunctions,
+			&CountOfCells,&Cells,
+			&CellSizes,&CellTypes,&CellOffset,
+			&CountOfCellMasks,&CellMasks,
+			&CountOfCellFunctions,&CellFunctions,
+			filename,0));
+
+
+	ASSERT_EQ(322494,CountOfPoints);
+	ASSERT_EQ(1878692,CountOfCells);
+
+	ASSERT_EQ(0,CountOfPointMasks);
+	ASSERT_EQ(4,CountOfPointFunctions);
+	ASSERT_EQ(0,CountOfCellMasks);
+	ASSERT_EQ(0,CountOfCellFunctions);
+
+}
+
+TEST(Test, tsagi_c_vtk){
+	char filename[256] = FILES_DIRECTORY "tsagi_c.vtk";
+
+	VtkClass D;
+
+	ASSERT_EQ(0,D.read_vtk(filename));
 
 }
 

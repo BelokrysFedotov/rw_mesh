@@ -52,6 +52,7 @@
 #define RW_MESH_VTK_DATASET_TYPE_TENSORS				7 // "TENSORS"
 #define RW_MESH_VTK_DATASET_TYPE_FIELD					8 // "FIELD"
 
+#define RW_MESH_VTK_SKIP_UNKNOWN	1
 
 struct RW_MESH_VTK_DATA_SCALARS_STRUCT{
 	int dataType;
@@ -141,7 +142,18 @@ int rw_mesh_vtk_dataset_struct_init(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 int rw_mesh_vtk_dataset_struct_clean(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 int rw_mesh_vtk_dataset_struct_free(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 
-int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK,char filename[256]);
+int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK,char filename[256],int flags);
+
+int read_format_vtk_unstructured_simplified(
+		int*CountOfPoints, REAL3**Points,
+		int*CountOfPointMasks, int**PointMasks,
+		int*CountOfPointFunctions, REAL**PointFunctions,
+
+		int*CountOfCells,int**Cells,int**CellSizes,int**CellTypes,int**CellOffset,
+		int*CountOfCellMasks, int**CellMasks,
+		int*CountOfCellFunctions, REAL**CellFunctions,
+
+		char*filename,int flags);
 
 /*int write_format_vtk(int nv, REAL* v, int* mskv, int dim,
 					 int ncells, int* cells, int* cell_sizes,

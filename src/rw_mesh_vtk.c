@@ -95,7 +95,7 @@ int rw_mesh_vtk_struct_clean(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
 	VTK->CellSizes = NULL;
 	VTK->CellTypes = NULL;
 
-	VTK->CountOfPoints = 0;
+	VTK->CountOfPointsData = 0;
 	VTK->PointsData = NULL;
 
 	VTK->CountOfCellsData = 0;
@@ -404,7 +404,7 @@ struct RW_MESH_VTK_DATASET_STRUCT*_vtk_add_data(struct RW_MESH_VTK_UNSTRUCTURED_
 	return Data;
 }
 
-int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK,char filename[256]){
+int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK,char filename[256],int flags){
 
 	__save_locale;
 
@@ -780,8 +780,12 @@ int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_
 					return 1;
 				}
 			}else{
-				rw_mesh_set_error(current_line,"Unknown block");
-				return 1;
+				if( (flags&RW_MESH_VTK_SKIP_UNKNOWN)){
+					//do nothing, skip line
+				}else{
+					rw_mesh_set_error(current_line,"Unknown block");
+					return 1;
+				}
 			}
 		}
 
@@ -891,6 +895,265 @@ int write_format_vtk(int nv, REAL* v, int *mskv, int dim,
 	fclose (LUN);
 
 	return (0);
+}
+
+int _vtk_type_is_mask(int type){
+	if(type==RW_MESH_VTK_TYPE_BIT)return 1;
+	if(type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR)return 1;
+	if(type==RW_MESH_VTK_TYPE_CHAR)return 1;
+	if(type==RW_MESH_VTK_TYPE_UNSIGNED_SHORT)return 1;
+	if(type==RW_MESH_VTK_TYPE_SHORT)return 1;
+	if(type==RW_MESH_VTK_TYPE_UNSIGNED_INT)return 1;
+	if(type==RW_MESH_VTK_TYPE_INT)return 1;
+	if(type==RW_MESH_VTK_TYPE_UNSIGNED_LONG)return 1;
+	if(type==RW_MESH_VTK_TYPE_LONG)return 1;
+	return 0;
+}
+
+void _write_mask(int MaskSize,int*Mask,int size,int offset,int type,void*data,int data_size,int data_offset){
+	int i;
+	for(i=0;i<MaskSize;i++){
+		switch(type){
+		case RW_MESH_VTK_TYPE_BIT:				Mask[size*i+offset] = ((char*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_UNSIGNED_CHAR:	Mask[size*i+offset] = ((char*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_CHAR:				Mask[size*i+offset] = ((char*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_UNSIGNED_SHORT:	Mask[size*i+offset] = ((unsigned short*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_SHORT:			Mask[size*i+offset] = ((short*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_UNSIGNED_INT:		Mask[size*i+offset] = ((unsigned int*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_INT:				Mask[size*i+offset] = ((int*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_UNSIGNED_LONG:	Mask[size*i+offset] = ((unsigned long int*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_LONG:				Mask[size*i+offset] = ((long int*)data)[data_size*i+offset];break;
+		}
+	}
+}
+
+int _simplify_data_to_masks(int MaskSize,int CountOfData,struct RW_MESH_VTK_DATASET_STRUCT*Datas,int*CountOfMasks, int**Masks){
+	int i,j,k,n,N;
+	n=0;
+	for(i=0;i<CountOfData;i++){
+		if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_FIELD){
+			for(j=0;j<((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->numArrays;j++){
+				if(_vtk_type_is_mask(((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].dataType)){
+					n += ((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].numComponents;
+				}
+			}
+		}else if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_SCALARS){
+			if(_vtk_type_is_mask(((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->dataType)){
+				n += ((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->numComp;
+			}
+		}
+	}
+
+	if(n==0){
+		if(CountOfMasks)*CountOfMasks = 0;
+		if(Masks)*Masks = NULL;
+		return 0;
+	}
+
+	if(CountOfMasks)*CountOfMasks = n;
+	if(!Masks) return 0;
+	N=n;
+	*Masks = (int*)calloc(n*MaskSize,sizeof(int));
+
+	n=0;
+	for(i=0;i<CountOfData;i++){
+		if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_FIELD){
+			for(j=0;j<((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->numArrays;j++){
+				if(_vtk_type_is_mask(((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].dataType)){
+					for(k=0;k<((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].numComponents;k++){
+						_write_mask(MaskSize,*Masks,N,n,((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].dataType,
+								((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].values,((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].numComponents,k);
+						n++;
+					}
+				}
+			}
+		}else if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_SCALARS){
+			if(_vtk_type_is_mask(((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->dataType)){
+				for(k=0;k<((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->numComp;k++){
+					_write_mask(MaskSize,*Masks,N,n,((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->dataType,
+							((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->values,((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->numComp,k);
+					n++;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int _vtk_type_is_function(int type){
+	if(type==RW_MESH_VTK_TYPE_FLOAT)return 1;
+	if(type==RW_MESH_VTK_TYPE_DOUBLE)return 1;
+	return 0;
+}
+
+void _write_function(int FunctionSize,REAL*Function,int size,int offset,int type,void*data,int data_size,int data_offset){
+	int i;
+	for(i=0;i<FunctionSize;i++){
+		switch(type){
+		case RW_MESH_VTK_TYPE_FLOAT:	Function[size*i+offset] = ((float*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_DOUBLE:	Function[size*i+offset] = ((double*)data)[data_size*i+offset];break;
+		}
+	}
+}
+
+
+
+int _simplify_data_to_functions(int FunctionSize,int CountOfData,struct RW_MESH_VTK_DATASET_STRUCT*Datas,int*CountOfFunctions, REAL**Functions){
+	int i,j,k,n,N;
+	n=0;
+	for(i=0;i<CountOfData;i++){
+		if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_FIELD){
+			for(j=0;j<((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->numArrays;j++){
+				if(_vtk_type_is_function(((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].dataType)){
+					n += ((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].numComponents;
+				}
+			}
+		}else if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_SCALARS){
+			if(_vtk_type_is_function(((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->dataType)){
+				n += ((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->numComp;
+			}
+		}
+	}
+
+	if(n==0){
+		if(CountOfFunctions)*CountOfFunctions = 0;
+		if(Functions)*Functions = NULL;
+		return 0;
+	}
+
+	if(CountOfFunctions)*CountOfFunctions = n;
+	if(!Functions) return 0;
+	N=n;
+	*Functions = (REAL*)calloc(n*FunctionSize,sizeof(REAL));
+
+	n=0;
+	for(i=0;i<CountOfData;i++){
+		if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_FIELD){
+			for(j=0;j<((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->numArrays;j++){
+				if(_vtk_type_is_function(((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].dataType)){
+					for(k=0;k<((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].numComponents;k++){
+						_write_function(FunctionSize,*Functions,N,n,((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].dataType,
+								((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].values,((struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Datas[i].Data)->Arrays[j].numComponents,k);
+						n++;
+					}
+				}
+			}
+		}else if(Datas[i].DataType == RW_MESH_VTK_DATASET_TYPE_SCALARS){
+			if(_vtk_type_is_function(((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->dataType)){
+				for(k=0;k<((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->numComp;k++){
+					_write_function(FunctionSize,*Functions,N,n,((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->dataType,
+							((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->values,((struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Datas[i].Data)->numComp,k);
+					n++;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int read_format_vtk_unstructured_simplified(
+		int*CountOfPoints, REAL3**Points,
+		int*CountOfPointMasks, int**PointMasks,
+		int*CountOfPointFunctions, REAL**PointFunctions,
+
+		int*CountOfCells,int**Cells,int**CellSizes,int**CellTypes,int**CellOffset,
+		int*CountOfCellMasks, int**CellMasks,
+		int*CountOfCellFunctions, REAL**CellFunctions,
+
+		char*filename,int flags){
+
+	int i,j,k;
+	int rn;
+	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT VTK;
+	rw_mesh_vtk_struct_init(&VTK);
+
+	rn = read_format_vtk_unstructured_in_struct(&VTK,filename,flags);
+	if(rn){
+		rw_mesh_vtk_struct_free(&VTK);
+		return 1;
+	}
+
+	if(CountOfPoints){
+		*CountOfPoints = VTK.CountOfPoints;
+	}
+
+	if(Points){
+		if(VTK.CountOfPoints){
+			*Points = (REAL3*)calloc(VTK.CountOfPoints,sizeof(REAL3));
+			for(i=0;i<VTK.CountOfPoints;i++)
+				for(k=0;k<3;k++)
+					(*Points)[i][k] = VTK.Points[i*3+k];
+
+		}else{
+			*Points = NULL;
+		}
+	}
+
+	if(VTK.CountOfPointsData){
+		_simplify_data_to_masks(VTK.CountOfPoints,VTK.CountOfPointsData,VTK.PointsData,CountOfPointMasks,PointMasks);
+		_simplify_data_to_functions(VTK.CountOfPoints,VTK.CountOfPointsData,VTK.PointsData,CountOfPointFunctions,PointFunctions);
+	}else{
+		if(CountOfPointMasks)*CountOfPointMasks=0;
+		if(PointMasks)*PointMasks=NULL;
+		if(CountOfPointFunctions)*CountOfPointFunctions=0;
+		if(PointFunctions)*PointFunctions=NULL;
+	}
+
+	if(CountOfCells){
+		*CountOfCells = VTK.CountOfCells;
+	}
+
+	if(Cells){
+		if(VTK.CountOfCells && VTK.Cells && VTK.CellOffset && VTK.CellOffset[VTK.CountOfCells]){
+			*Cells = (int*)calloc(VTK.CellOffset[VTK.CountOfCells],sizeof(int));
+			for(i=0;i<VTK.CellOffset[VTK.CountOfCells];i++)
+				(*Cells)[i] = VTK.Cells[i];
+		}else{
+			*Cells = NULL;
+		}
+	}
+
+	if(CellSizes){
+		if(VTK.CountOfCells && VTK.CellSizes){
+			*CellSizes = (int*)calloc(VTK.CountOfCells,sizeof(int));
+			for(i=0;i<VTK.CountOfCells;i++)
+				(*CellSizes)[i] = VTK.CellSizes[i];
+		}else{
+			*CellSizes = NULL;
+		}
+	}
+
+	if(CellTypes){
+		if(VTK.CountOfCells && VTK.CellTypes){
+			*CellTypes = (int*)calloc(VTK.CountOfCells,sizeof(int));
+			for(i=0;i<VTK.CountOfCells;i++)
+				(*CellTypes)[i] = VTK.CellTypes[i];
+		}else{
+			*CellTypes = NULL;
+		}
+	}
+
+	if(CellOffset){
+		if(VTK.CountOfCells && VTK.CellOffset){
+			*CellOffset = (int*)calloc(VTK.CountOfCells+1,sizeof(int));
+			for(i=0;i<=VTK.CountOfCells;i++)
+				(*CellOffset)[i] = VTK.CellOffset[i];
+		}else{
+			*CellOffset = NULL;
+		}
+	}
+
+	if(VTK.CountOfCellsData){
+		_simplify_data_to_masks(VTK.CountOfCells,VTK.CountOfCellsData,VTK.CellsData,CountOfCellMasks,CellMasks);
+		_simplify_data_to_functions(VTK.CountOfCells,VTK.CountOfCellsData,VTK.CellsData,CountOfCellFunctions,CellFunctions);
+	}else{
+		if(CountOfCellMasks)*CountOfCellMasks=0;
+		if(CellMasks)*CellMasks=NULL;
+		if(CountOfCellFunctions)*CountOfCellFunctions=0;
+		if(CellFunctions)*CellFunctions=NULL;
+	}
+
+	return 0;
 }
 
 
