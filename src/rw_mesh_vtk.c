@@ -4,83 +4,6 @@
 #include "rw_mesh_string.h"
 #include "rw_mesh_vtk.h"
 
-int str_divide( char* input, const char* separator, char* before, char* after);
-int str_trim(char* s);
-int char_is_space(char c);
-int vtk_read_line (FILE * STREAM, char *line);
-
-
-int str_divide( char* input, const char* separator, char* before, char* after)
-{
-	char* s;
-	int len, lens, pos;
-
-	len = strlen(input);
-	lens = strlen(separator);
-	s = strstr(input, separator);
-
-	if (!s) return (1);
-
-	pos = s-input;
-	memcpy( before, input, pos);
-	before[pos] = '\0';
-	str_trim(before);
-	memcpy( after, s + lens, len - lens - pos);
-	after[len - lens - pos] = '\0';
-	str_trim(after);
-
-	return (0);
-}
-
-int str_trim(char* s)
-{
-	int i, len, lf, rt;
-	len = strlen(s);
-
-	lf = 0;
-	while (char_is_space(s[lf]))
-		lf++;
-
-	rt = len - 1;
-	while (rt > 0 && char_is_space(s[rt]))
-		rt--;
-
-	if (rt == 0 && char_is_space(s[rt]))
-	{
-		s[0] = '\0';
-		return (0);
-	}
-
-	if (lf > 0)
-	{
-		for (i = lf; i <= rt; i++)
-			s[i - lf] = s[i];
-	}
-
-	s[rt - lf + 1] = '\0';
-	return (lf + len - rt - 1);
-}
-
-int char_is_space(char c)
-{
-	if (c == ' ') return (1);
-	if (c == '\t') return (1);
-	if (c == '\r') return (1);
-	if (c == '\n') return (1);
-	return (0);
-}
-int vtk_read_line (FILE * STREAM, char *line)
-{
-  int i;
-
-  if (fgets (line, 256, STREAM) == NULL)
-      return (-1);
-
-  i = strlen(line);
-  return i;
-}
-
-
 int rw_mesh_vtk_struct_init(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
 	rw_mesh_vtk_struct_clean(VTK);
 	return 0;
@@ -801,102 +724,6 @@ int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_
 	return 0;
 }
 
-int write_format_vtk(int nv, REAL* v, int *mskv, int dim,
-					 int ncells, int* cells, int* cell_sizes,
-					 int* cell_types, int *cell_mask, char filename[256])
-{
-	char word[256];
-	int i, k;
-	FILE *LUN; 
-
-	/* the numbering in index arrays is started from 1 here! */
-	if (strlen(filename) == 0)
-	{
-		log_write("empty filename \n");
-		return (-1);
-	};
-
-	LUN = fopen (filename, "w");
-	if (LUN == NULL)
-	{
-		log_write("can't open vtk-file \n");
-		return (-1);
-	};
-
-	sprintf (word, "%s", "# vtk DataFile Version 3.0");  
-	fprintf (LUN, "%s\n", word);
-	sprintf (word, "%s", "vtk output"); 
-	fprintf (LUN, "%s\n", word);
-	sprintf (word, "%s", "ASCII");      
-	fprintf (LUN, "%s\n", word);
-	sprintf (word, "%s", "DATASET UNSTRUCTURED_GRID");      
-	fprintf (LUN, "%s\n", word);
-
-	sprintf (word, "%s %d double", "POintS", nv);
-
-	fprintf (LUN, "%s\n", word);
-	if (dim == 2)
-		for (i = 0; i < nv; i++)
-			fprintf (LUN, "%le %le %le \n", v[2 * i + 0], 
-			v[2 * i + 1], 0.0e0);
-
-	if (dim == 3)
-		for (i = 0; i < nv; i++)
-			fprintf (LUN, "%le %le %le\n", v[3 * i + 0], 
-			v[3 * i + 1], v[3 * i + 2]);
-
-    
-	if(ncells > 0)
-	{
-		sprintf (word, "%s %d %d", "CELLS", ncells, cell_sizes[ncells] + ncells);
-		fprintf (LUN, "%s\n", word);	
-		  
-		for (i = 0; i < ncells; i++)
-		{
-			fprintf (LUN, "%d ", cell_sizes[i + 1] - cell_sizes[i]);
-			for (k = cell_sizes[i]; k < cell_sizes[i + 1]; k++)
-				fprintf (LUN, "%d ", cells[k]);
-			fprintf (LUN, "\n");
-		}
-	}
-		
-	if (cell_types != NULL)
-	{
-		sprintf (word, "%s %d", "CELL_TYPES", ncells);
-		fprintf (LUN, "%s\n", word);		
-		for (i = 0; i < ncells; i++)
-			fprintf (LUN, "%d\n", cell_types[i]);
-	}
-
-	if (mskv != NULL)
-	{
-		sprintf (word, "%s", "FIELD FieldData 1");  
-		fprintf (LUN, "%s\n", word);	
-		sprintf (word, "%s %d %s", "optimization-points 1 ", nv, " vtkIdType");
-		fprintf (LUN, "%s\n", word);		
-
-		for (i = 0; i < nv; i++)
-			fprintf (LUN, "%d\n", mskv[i]);
-	}
-
-	if (cell_mask != NULL)
-	{
-		sprintf (word, "%s %d", "CELL_DATA", ncells);
-		fprintf (LUN, "%s\n", word);
-		sprintf (word, "%s", "SCALARS scalars int");
-		fprintf (LUN, "%s\n", word);
-		sprintf (word, "%s", "LOOKUP_TABLE default");
-		fprintf (LUN, "%s\n", word);		
-
-		for (i = 0; i < ncells; i++)
-			fprintf (LUN, "%d\n", cell_mask[i]);
-	}
-		
-	fclose (LUN);
-
-	return (0);
-}
-
 int _vtk_type_is_mask(int type){
 	if(type==RW_MESH_VTK_TYPE_BIT)return 1;
 	if(type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR)return 1;
@@ -1157,6 +984,179 @@ int read_format_vtk_unstructured_simplified(
 }
 
 
+/*
+int str_divide( char* input, const char* separator, char* before, char* after);
+int str_trim(char* s);
+int char_is_space(char c);
+int vtk_read_line (FILE * STREAM, char *line);
+
+
+int str_divide( char* input, const char* separator, char* before, char* after)
+{
+	char* s;
+	int len, lens, pos;
+
+	len = strlen(input);
+	lens = strlen(separator);
+	s = strstr(input, separator);
+
+	if (!s) return (1);
+
+	pos = s-input;
+	memcpy( before, input, pos);
+	before[pos] = '\0';
+	str_trim(before);
+	memcpy( after, s + lens, len - lens - pos);
+	after[len - lens - pos] = '\0';
+	str_trim(after);
+
+	return (0);
+}
+
+int str_trim(char* s)
+{
+	int i, len, lf, rt;
+	len = strlen(s);
+
+	lf = 0;
+	while (char_is_space(s[lf]))
+		lf++;
+
+	rt = len - 1;
+	while (rt > 0 && char_is_space(s[rt]))
+		rt--;
+
+	if (rt == 0 && char_is_space(s[rt]))
+	{
+		s[0] = '\0';
+		return (0);
+	}
+
+	if (lf > 0)
+	{
+		for (i = lf; i <= rt; i++)
+			s[i - lf] = s[i];
+	}
+
+	s[rt - lf + 1] = '\0';
+	return (lf + len - rt - 1);
+}
+
+int char_is_space(char c)
+{
+	if (c == ' ') return (1);
+	if (c == '\t') return (1);
+	if (c == '\r') return (1);
+	if (c == '\n') return (1);
+	return (0);
+}
+int vtk_read_line (FILE * STREAM, char *line)
+{
+  int i;
+
+  if (fgets (line, 256, STREAM) == NULL)
+      return (-1);
+
+  i = strlen(line);
+  return i;
+}
+
+int write_format_vtk(int nv, REAL* v, int *mskv, int dim,
+					 int ncells, int* cells, int* cell_sizes,
+					 int* cell_types, int *cell_mask, char filename[256])
+{
+	char word[256];
+	int i, k;
+	FILE *LUN;
+
+	// the numbering in index arrays is started from 1 here!
+	if (strlen(filename) == 0)
+	{
+		log_write("empty filename \n");
+		return (-1);
+	};
+
+	LUN = fopen (filename, "w");
+	if (LUN == NULL)
+	{
+		log_write("can't open vtk-file \n");
+		return (-1);
+	};
+
+	sprintf (word, "%s", "# vtk DataFile Version 3.0");
+	fprintf (LUN, "%s\n", word);
+	sprintf (word, "%s", "vtk output");
+	fprintf (LUN, "%s\n", word);
+	sprintf (word, "%s", "ASCII");
+	fprintf (LUN, "%s\n", word);
+	sprintf (word, "%s", "DATASET UNSTRUCTURED_GRID");
+	fprintf (LUN, "%s\n", word);
+
+	sprintf (word, "%s %d double", "POintS", nv);
+
+	fprintf (LUN, "%s\n", word);
+	if (dim == 2)
+		for (i = 0; i < nv; i++)
+			fprintf (LUN, "%le %le %le \n", v[2 * i + 0],
+			v[2 * i + 1], 0.0e0);
+
+	if (dim == 3)
+		for (i = 0; i < nv; i++)
+			fprintf (LUN, "%le %le %le\n", v[3 * i + 0],
+			v[3 * i + 1], v[3 * i + 2]);
+
+
+	if(ncells > 0)
+	{
+		sprintf (word, "%s %d %d", "CELLS", ncells, cell_sizes[ncells] + ncells);
+		fprintf (LUN, "%s\n", word);
+
+		for (i = 0; i < ncells; i++)
+		{
+			fprintf (LUN, "%d ", cell_sizes[i + 1] - cell_sizes[i]);
+			for (k = cell_sizes[i]; k < cell_sizes[i + 1]; k++)
+				fprintf (LUN, "%d ", cells[k]);
+			fprintf (LUN, "\n");
+		}
+	}
+
+	if (cell_types != NULL)
+	{
+		sprintf (word, "%s %d", "CELL_TYPES", ncells);
+		fprintf (LUN, "%s\n", word);
+		for (i = 0; i < ncells; i++)
+			fprintf (LUN, "%d\n", cell_types[i]);
+	}
+
+	if (mskv != NULL)
+	{
+		sprintf (word, "%s", "FIELD FieldData 1");
+		fprintf (LUN, "%s\n", word);
+		sprintf (word, "%s %d %s", "optimization-points 1 ", nv, " vtkIdType");
+		fprintf (LUN, "%s\n", word);
+
+		for (i = 0; i < nv; i++)
+			fprintf (LUN, "%d\n", mskv[i]);
+	}
+
+	if (cell_mask != NULL)
+	{
+		sprintf (word, "%s %d", "CELL_DATA", ncells);
+		fprintf (LUN, "%s\n", word);
+		sprintf (word, "%s", "SCALARS scalars int");
+		fprintf (LUN, "%s\n", word);
+		sprintf (word, "%s", "LOOKUP_TABLE default");
+		fprintf (LUN, "%s\n", word);
+
+		for (i = 0; i < ncells; i++)
+			fprintf (LUN, "%d\n", cell_mask[i]);
+	}
+
+	fclose (LUN);
+
+	return (0);
+}
+
 int write_format_vtk_points_function(int nv, REAL* v, int *mskv,REAL*fv, int dim,
 					 int ncells, int* cells, int* cell_sizes,
 					 int* cell_types, int *cell_mask, char filename[256])
@@ -1165,7 +1165,7 @@ int write_format_vtk_points_function(int nv, REAL* v, int *mskv,REAL*fv, int dim
 	int i, k;
 	FILE *LUN;
 
-	/* the numbering in index arrays is started from 1 here! */
+	// the numbering in index arrays is started from 1 here!
 	if (strlen(filename) == 0)
 	{
 		log_write("empty filename \n");
@@ -1430,5 +1430,5 @@ int read_format_vtk(int *out_nv, REAL3** out_v, int **out_mskv,
   else if (cell_mask != NULL) free(cell_mask);
 
   return (0);
-}
+}*/
 
