@@ -42,7 +42,7 @@ int main (int argc, char *argv[]) {
 	}
 
 	for(i=0;i<numberline;i++){
-		read_line(fd,line);
+		rw_mesh_read_line(fd,line);
 		if(feof(fd)){
 			fclose(fd);
 			printf("File endedon line %d\n",i);
@@ -50,7 +50,7 @@ int main (int argc, char *argv[]) {
 		}
 	}
 
-	read_line(fd,line);
+	rw_mesh_read_line(fd,line);
 	fclose(fd);
 
 

@@ -20,8 +20,7 @@
 #define CHARSET_ABC "ABCDEFGHIJKLMNOPRSTUVWXYZ"
 #define CHARSET_PLUSMINUS "+-"
 
-int read_line (FILE * STREAM, char *line);
-
+int rw_mesh_read_line (FILE * STREAM, char *line);
 
 int in_charset(const char c,const char*charset);
 int string_ltrim_charset(char*line,const char*charset);

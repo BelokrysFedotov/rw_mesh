@@ -12,6 +12,17 @@
 #include "rw_mesh_mesh.h"
 
 
+int mesh_read_line (FILE * STREAM, char *line)
+{
+  int i;
+
+  if (fgets (line, 256, STREAM) == NULL)
+      return (-1);
+
+  i = strlen(line);
+  return i;
+}
+
 int read_format_mesh(int *out_nv, REAL3 **out_v, int** out_emskv,
 					 int *out_ncells_T, INT3 **out_cells_T, int** out_emskc_T,
 					 int *out_ncells_Q, INT4 **out_cells_Q, int** out_emskc_Q,

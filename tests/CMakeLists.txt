@@ -34,3 +34,6 @@ add_test(test_read_vtk test_read_vtk)
 add_executable (read_vtk_file vtk/read_vtk_file.c)
 target_link_libraries (read_vtk_file ${LIBS})
 
+add_executable (write_vtk_structed_file vtk/write_vtk_structed_file.c)
+target_link_libraries (write_vtk_structed_file ${LIBS})
+

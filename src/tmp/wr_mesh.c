@@ -4,7 +4,17 @@
 #include <stdio.h>
 #include "wr.h"
 
-int mesh_read_line (FILE * STREAM, char *line);
+
+int mesh_read_line (FILE * STREAM, char *line)
+{
+  int i;
+
+  if (fgets (line, 256, STREAM) == NULL)
+      return (-1);
+
+  i = strlen(line);
+  return i;
+}
 
 int write_format_mesh (int nv, REAL* v, int* emskv, int dim, 
 					   int ncells_T, int3* cells_T, int* emskc_T, 
@@ -438,15 +448,4 @@ int read_format_mesh(int *out_nv, REAL3 **out_v, int** out_emskv,
 	fclose(LUN);
     return (0);
 }  
-
-int mesh_read_line (FILE * STREAM, char *line)
-{
-  int i;
-  
-  if (fgets (line, 256, STREAM) == NULL)
-      return (-1);
-  
-  i = strlen(line);
-  return i;
-}
 

@@ -4,19 +4,14 @@
 #include "rw_mesh_string.h"
 #include "rw_mesh_vtk.h"
 
-int rw_mesh_vtk_struct_init(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
+
+int rw_mesh_vtk_struct_init(struct RW_MESH_VTK_STRUCT*VTK){
 	rw_mesh_vtk_struct_clean(VTK);
 	return 0;
 }
-int rw_mesh_vtk_struct_clean(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
-	VTK->CountOfPoints = 0;
-	VTK->Points = NULL;
-
-	VTK->CountOfCells = 0;
-	VTK->Cells = NULL;
-	VTK->CellOffset = NULL;
-	VTK->CellSizes = NULL;
-	VTK->CellTypes = NULL;
+int rw_mesh_vtk_struct_clean(struct RW_MESH_VTK_STRUCT*VTK){
+	VTK->type = RW_MESH_VTK_TYPE_NONE;
+	VTK->Grid = NULL;
 
 	VTK->CountOfPointsData = 0;
 	VTK->PointsData = NULL;
@@ -26,16 +21,32 @@ int rw_mesh_vtk_struct_clean(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
 
 	VTK->CountOfData = 0;
 	VTK->Data = NULL;
-
 	return 0;
 }
-int rw_mesh_vtk_struct_free(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
+int rw_mesh_vtk_struct_free(struct RW_MESH_VTK_STRUCT*VTK){
 	int i;
-	ffree(VTK->Points);
-	ffree(VTK->Cells);
-	ffree(VTK->CellOffset);
-	ffree(VTK->CellSizes);
-	ffree(VTK->CellTypes);
+
+	if(VTK->Grid)
+		switch(VTK->type){
+		case RW_MESH_VTK_TYPE_STRUCTURED_POINTS:
+			rw_mesh_vtk_structured_points_struct_free((struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*)(VTK->Grid));
+			break;
+		case RW_MESH_VTK_TYPE_STRUCTURED_GRID:
+			rw_mesh_vtk_structured_grid_struct_free((struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*)(VTK->Grid));
+			break;
+		case RW_MESH_VTK_TYPE_RECTILINEAR_GRID:
+			rw_mesh_vtk_rectiliner_grid_struct_free((struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*)(VTK->Grid));
+			break;
+		case RW_MESH_VTK_TYPE_POLYGONAL_DATA:
+			rw_mesh_vtk_polygonal_data_struct_free((struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*)(VTK->Grid));
+			break;
+		case RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID:
+			rw_mesh_vtk_unstructured_grid_struct_free((struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*)(VTK->Grid));
+			break;
+		}
+
+	ffree(VTK->Grid);
+
 	for(i=0;i<VTK->CountOfPointsData;i++)
 		rw_mesh_vtk_dataset_struct_free(VTK->PointsData+i);
 	ffree(VTK->PointsData);
@@ -47,6 +58,90 @@ int rw_mesh_vtk_struct_free(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
 	ffree(VTK->Data);
 
 	rw_mesh_vtk_struct_clean(VTK);
+	return 0;
+}
+
+int rw_mesh_vtk_structured_points_struct_init(struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*VTK){
+	rw_mesh_vtk_structured_points_struct_clean(VTK);
+	return 0;
+}
+int rw_mesh_vtk_structured_points_struct_clean(struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*VTK){
+	//TODO
+	return 0;
+}
+int rw_mesh_vtk_structured_points_struct_free(struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*VTK){
+	//TODO
+	return 0;
+}
+
+int rw_mesh_vtk_structured_grid_struct_init(struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*VTK){
+	rw_mesh_vtk_structured_grid_struct_clean(VTK);
+	return 0;
+}
+int rw_mesh_vtk_structured_grid_struct_clean(struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*VTK){
+	VTK->Nx = 0;
+	VTK->Ny = 0;
+	VTK->Nz = 0;
+	VTK->Points = NULL;
+	return 0;
+}
+int rw_mesh_vtk_structured_grid_struct_free(struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*VTK){
+	ffree(VTK->Points);
+	rw_mesh_vtk_structured_grid_struct_clean(VTK);
+	return 0;
+}
+
+int rw_mesh_vtk_rectiliner_grid_struct_init(struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*VTK){
+	rw_mesh_vtk_rectiliner_grid_struct_clean(VTK);
+	return 0;
+}
+int rw_mesh_vtk_rectiliner_grid_struct_clean(struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*VTK){
+	//TODO
+	return 0;
+}
+int rw_mesh_vtk_rectiliner_grid_struct_free(struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*VTK){
+	//TODO
+	return 0;
+}
+
+int rw_mesh_vtk_polygonal_data_struct_init(struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*VTK){
+	rw_mesh_vtk_polygonal_data_struct_clean(VTK);
+	return 0;
+}
+int rw_mesh_vtk_polygonal_data_struct_clean(struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*VTK){
+	//TODO
+	return 0;
+}
+int rw_mesh_vtk_polygonal_data_struct_free(struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*VTK){
+	//TODO
+	return 0;
+}
+
+int rw_mesh_vtk_unstructured_grid_struct_init(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
+	rw_mesh_vtk_unstructured_grid_struct_clean(VTK);
+	return 0;
+}
+int rw_mesh_vtk_unstructured_grid_struct_clean(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
+	VTK->CountOfPoints = 0;
+	VTK->Points = NULL;
+
+	VTK->CountOfCells = 0;
+	VTK->Cells = NULL;
+	VTK->CellOffset = NULL;
+	VTK->CellSizes = NULL;
+	VTK->CellTypes = NULL;
+
+	return 0;
+}
+int rw_mesh_vtk_unstructured_grid_struct_free(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK){
+	int i;
+	ffree(VTK->Points);
+	ffree(VTK->Cells);
+	ffree(VTK->CellOffset);
+	ffree(VTK->CellSizes);
+	ffree(VTK->CellTypes);
+
+	rw_mesh_vtk_unstructured_grid_struct_clean(VTK);
 	return 0;
 }
 
@@ -129,33 +224,37 @@ int _parse_vtk_type(char*string){
 	return RW_MESH_VTK_TYPE_NONE;
 }
 
-void*_vtk_type_allocate(int type,int count){
-	if(type==RW_MESH_VTK_TYPE_BIT || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR){
-		return calloc(count,sizeof(char));
+size_t _vtk_type_size(int type){
+	if(type==RW_MESH_VTK_TYPE_BIT || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_CHAR){
+		return sizeof(char);
 	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_SHORT){
-		return calloc(count,sizeof(unsigned short));
+		return sizeof(unsigned short);
 	}else if(type==RW_MESH_VTK_TYPE_SHORT){
-		return calloc(count,sizeof(short));
+		return sizeof(short);
 	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_INT){
-		return calloc(count,sizeof(unsigned int));
+		return sizeof(unsigned int);
 	}else if(type==RW_MESH_VTK_TYPE_INT){
-		return calloc(count,sizeof(int));
+		return sizeof(int);
 	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_LONG){
-		return calloc(count,sizeof(unsigned long int));
+		return sizeof(unsigned long int);
 	}else if(type==RW_MESH_VTK_TYPE_LONG){
-		return calloc(count,sizeof(long int));
+		return sizeof(long int);
 	}else if(type==RW_MESH_VTK_TYPE_FLOAT){
-		return calloc(count,sizeof(float));
+		return sizeof(float);
 	}else if(type==RW_MESH_VTK_TYPE_DOUBLE){
-		return calloc(count,sizeof(double));
+		return sizeof(double);
 	}
 	return 0;
+}
+
+void*_vtk_type_allocate(int type,int count){
+	return calloc(count,_vtk_type_size(type));
 }
 
 int _read_vtk_type_offset(int type,char*string,void*value,int offset){
 	int rn;
 	char c;
-	if(type==RW_MESH_VTK_TYPE_BIT || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR){
+	if(type==RW_MESH_VTK_TYPE_BIT){
 		rn = sscanf(string,"%c",&c);
 		if(rn==1){
 			if(c=='0'){
@@ -168,6 +267,9 @@ int _read_vtk_type_offset(int type,char*string,void*value,int offset){
 			return 1;
 		}
 		return 0;
+	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR){
+		rn = sscanf(string,"%c",&c);
+		return rn;
 	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_SHORT){
 		rn = sscanf(string,"%hu",(unsigned short*)value+offset);
 		return rn;
@@ -263,7 +365,7 @@ int _read_vtk_array_type(FILE*fd,int count,int type,void*value,int*current_line,
 		string_cut_word(line,word);
 
 		if(_read_vtk_type_offset(type,word,value,i)!=1){
-			rw_mesh_set_error(*current_line,"Error in reading values.");
+			rw_mesh_set_error(*current_line,"Error in reading values");
 			return 1;
 		}
 		i++;
@@ -287,7 +389,7 @@ int _read_vtk_array_as_REAL_type(FILE*fd,int count,int type,REAL*value,int*curre
 		string_cut_word(line,word);
 
 		if(_read_vtk_type_as_REAL_offset(type,word,value,i)!=1){
-			rw_mesh_set_error(*current_line,"Error in reading values.");
+			rw_mesh_set_error(*current_line,"Error in reading values");
 			return 1;
 		}
 		i++;
@@ -296,16 +398,16 @@ int _read_vtk_array_as_REAL_type(FILE*fd,int count,int type,REAL*value,int*curre
 	return 0;
 }
 
-struct RW_MESH_VTK_DATASET_STRUCT*_vtk_add_data(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK,int data_type){
+struct RW_MESH_VTK_DATASET_STRUCT*_vtk_add_data(struct RW_MESH_VTK_STRUCT*VTK,int data_object){
 	int d;
 	int*CountOfData;
 	struct RW_MESH_VTK_DATASET_STRUCT**Datas;
 	struct RW_MESH_VTK_DATASET_STRUCT*Data;
 
-	if(data_type==1){
+	if(data_object==1){
 		CountOfData = &(VTK->CountOfPointsData);
 		Datas = &(VTK->PointsData);
-	}else if(data_type==2){
+	}else if(data_object==2){
 		CountOfData = &(VTK->CountOfCellsData);
 		Datas = &(VTK->CellsData);
 	}else{
@@ -327,7 +429,80 @@ struct RW_MESH_VTK_DATASET_STRUCT*_vtk_add_data(struct RW_MESH_VTK_UNSTRUCTURED_
 	return Data;
 }
 
-int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK,char filename[256],int flags){
+int _vtk_read_field_data(struct RW_MESH_VTK_STRUCT*VTK,int data_object,char*line,char*word,FILE*fd,int*current_line){
+	struct RW_MESH_VTK_DATASET_STRUCT*Data;
+	struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field;
+	int i,a,size;
+
+	Data = _vtk_add_data(VTK,data_object);
+
+	Data->DataType = RW_MESH_VTK_DATASET_TYPE_FIELD;
+	Data->Counts = 1;
+	Field = (struct RW_MESH_VTK_DATA_FIELD_STRUCT*)calloc(Data->Counts,sizeof(struct RW_MESH_VTK_DATA_FIELD_STRUCT));
+	Data->Data = Field;
+
+	//next word must be dataName
+	string_cut_word(line,word);
+	Data->DataName = (char*)calloc(strlen(word)+1,sizeof(char));
+	strcpy(Data->DataName,word);
+
+	Field->numArrays = 0;
+	Field->Arrays = NULL;
+
+	//next word must be numArrays
+	string_cut_word(line,word);
+	if(sscanf(word,"%d",&size)!=1){
+		rw_mesh_set_error(*current_line,"Can't read size of FIELD");
+		return 1;
+	}
+	Field->numArrays = size;
+
+	if(Field->numArrays){
+		Field->Arrays = (struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT*)calloc(Field->numArrays,sizeof(struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT));
+		for(i=0;i<Field->numArrays;i++){
+			//read arrays
+
+			//read arrayNamei numComponents numTuples dataType
+			read_line_trim(fd,line);(*current_line)++;
+			// read arrayNamei
+			string_cut_word(line,word);
+			Field->Arrays[i].name = (char*)calloc(strlen(word)+1,sizeof(char));
+			strcpy(Field->Arrays[i].name,word);
+
+			//read numComponents
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(*current_line,"Can't read numComponents of FIELD Array");
+				return 1;
+			}
+			Field->Arrays[i].numComponents = a;
+
+			//read numTuples
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(*current_line,"Can't read numTuples of FIELD Array");
+				return 1;
+			}
+			Field->Arrays[i].numTuples = a;
+
+			//read dataType
+			string_cut_word(line,word);
+			Field->Arrays[i].dataType = _parse_vtk_type(word);
+
+			//f 00 f 01 ... f 0(numComponents-1)
+			if(Field->Arrays[i].numComponents*Field->Arrays[i].numTuples){
+				Field->Arrays[i].values = _vtk_type_allocate(Field->Arrays[i].dataType,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples);
+				if(_read_vtk_array_type(fd,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType,Field->Arrays[i].values,current_line,0)){
+					return 1;
+				}
+			}
+
+		}
+	}
+	return 0;
+}
+
+int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int flags){
 
 	__save_locale;
 
@@ -338,13 +513,27 @@ int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_
 	int rn;
 	int size;
 	int type;
-	int data_type,data_size;
+	int data_object,data_size;
+	int CountOfPoints,CountOfCells;
 
+	struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*	StructuredPoints;
+	struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*		StructuredGrid;
+	struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*		RectilinerGrid;
+	struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*		PolygonalData;
+	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*	UnstructuredGrid;
+
+	char prev_line[256];
 	char line[256];
 	char word[256];
 	int current_line;
 	int linepos;
 	char line_error[256];
+
+	StructuredPoints	= NULL;
+	StructuredGrid		= NULL;
+	RectilinerGrid		= NULL;
+	PolygonalData		= NULL;
+	UnstructuredGrid	= NULL;
 
 	rw_mesh_set_filename(filename);
 	fd=fopen(filename,"r");if(fd==NULL){
@@ -381,7 +570,7 @@ int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_
 	}
 
 	if(strcmp(line,"ASCII")!=0){
-		rw_mesh_set_error(current_line,"Unknown format of file. It must be ASCII or BINARY.");
+		rw_mesh_set_error(current_line,"Unknown format of file. It must be ASCII or BINARY");
 		return 1;
 	}
 
@@ -389,337 +578,409 @@ int read_format_vtk_unstructured_in_struct(struct RW_MESH_VTK_UNSTRUCTURED_GRID_
 	read_line_trim(fd,line); current_line++;
 	string_cut_word(line,word);
 	if(strcmp(word,"DATASET")!=0){
-		rw_mesh_set_error(current_line,"Line must be \"DATASET type\".");
+		rw_mesh_set_error(current_line,"Line must be \"DATASET type\"");
 		return 1;
 	}
 
 	string_cut_word(line,word);
 	if(strcmp(word,"STRUCTURED_POINTS")==0){
 		//RW_MESH_VTK_TYPE_STRUCTURED_POINTS;
-		rw_mesh_set_error(current_line,"Type of DATASET is STRUCTURED_POINTS. It isn't supported in current version of reader.");
+		rw_mesh_set_error(current_line,"Type of DATASET is STRUCTURED_POINTS. It isn't supported in current version of reader");
 		return 1;
 	}else if(strcmp(word,"STRUCTURED_GRID")==0){
 		//RW_MESH_VTK_TYPE_STRUCTURED_GRID;
-		rw_mesh_set_error(current_line,"Type of DATASET is STRUCTURED_GRID. It isn't supported in current version of reader.");
-		return 1;
+
+		VTK->type = RW_MESH_VTK_TYPE_STRUCTURED_GRID;
+		StructuredGrid = (void*)calloc(1,sizeof(struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT));
+		rw_mesh_vtk_structured_grid_struct_init(StructuredGrid);
+		VTK->Grid = StructuredGrid;
+
+
+		if(!read_line_skip_empty(fd,line,&current_line)){
+			rw_mesh_set_error(current_line,"Missing points block");
+			return 1;
+		}
+		string_cut_word(line,word);
+
+		{// Dimenstions
+
+			//DIMENSIONS n_x n_y n_z
+
+			// read name of block
+			if(strcmp(word,"DIMENSIONS")!=0){
+				rw_mesh_set_error(current_line,"Missing dimentions");
+				return 1;
+			}
+
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1 || a<1){
+				rw_mesh_set_error(current_line,"Can't read Nx");
+				return 1;
+			}
+			StructuredGrid->Nx = a;
+
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1 || a<1){
+				rw_mesh_set_error(current_line,"Can't read Ny");
+				return 1;
+			}
+			StructuredGrid->Ny = a;
+
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1 || a<1){
+				rw_mesh_set_error(current_line,"Can't read Nz");
+				return 1;
+			}
+			StructuredGrid->Nz = a;
+
+			// POINTS n dataType
+
+
+		}
+
+		{// Points block
+
+			// read name of block
+			if(strcmp(word,"POINTS")!=0){
+				rw_mesh_set_error(current_line,"Missing points block");
+				return 1;
+			}
+
+			// first word POINTS
+			// next word must be CountOfPoints
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(current_line,"Can't read count of points");
+				return 1;
+			}
+			CountOfPoints = a;
+
+			if(CountOfPoints!=StructuredGrid->Nx*StructuredGrid->Ny*StructuredGrid->Nz){
+				rw_mesh_set_error(current_line,"Count of points not equal Nx*Ny*Nz");
+				return 1;
+			}
+
+			// the ending of line must be a vtk type
+			type = _parse_vtk_type(line);
+			if(type==RW_MESH_VTK_TYPE_NONE){
+				rw_mesh_set_error(current_line,"Unknown points type");
+				return 1;
+			}
+
+			StructuredGrid->Points = (REAL*)calloc(CountOfPoints*3,sizeof(REAL));
+			if(_read_vtk_array_as_REAL_type(fd,CountOfPoints*3,type,StructuredGrid->Points,&current_line)){
+				return 1;
+			}
+
+			CountOfPoints = StructuredGrid->Nx*StructuredGrid->Ny*StructuredGrid->Nz;
+			CountOfCells = (StructuredGrid->Nx-1)*(StructuredGrid->Ny-1)*(StructuredGrid->Nz-1);
+
+		}
+
+
 	}else if(strcmp(word,"RECTILINEAR_GRID")==0){
 		//RW_MESH_VTK_TYPE_RECTILINEAR_GRID;
-		rw_mesh_set_error(current_line,"Type of DATASET is RECTILINEAR_GRID. It isn't supported in current version of reader.");
+		rw_mesh_set_error(current_line,"Type of DATASET is RECTILINEAR_GRID. It isn't supported in current version of reader");
 		return 1;
 	}else if(strcmp(word,"POLYDATA")==0){
 		//RW_MESH_VTK_TYPE_POLYDATA;
-		rw_mesh_set_error(current_line,"Type of DATASET is POLYDATA. It isn't supported in current version of reader.");
+		rw_mesh_set_error(current_line,"Type of DATASET is POLYDATA. It isn't supported in current version of reader");
 		return 1;
 	}else if(strcmp(word,"UNSTRUCTURED_GRID")==0){
 		//RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID;
 
-		/**
-		 * data_type = 0; - data
-		 * data_type = 1; - points data
-		 * data_type = 2; - cells data
-		 */
-		data_type = 0;
-		data_size = 0;
+		VTK->type = RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID;
+		UnstructuredGrid = (void*)calloc(1,sizeof(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT));
+		rw_mesh_vtk_unstructured_grid_struct_init(UnstructuredGrid);
+		VTK->Grid = UnstructuredGrid;
 
-		// read blocks
-		while(read_line_skip_empty(fd,line,&current_line)>=0){
-			// read name of block
+		if(!read_line_skip_empty(fd,line,&current_line)){
+			rw_mesh_set_error(current_line,"Missing points block");
+			return 1;
+		}
+		string_cut_word(line,word);
+
+		if(strcmp(word,"FIELD")==0){
+			//it may be FIELD data before Points and Cells
+			if(_vtk_read_field_data(VTK,RW_MESH_VTK_DATA_OBJECT_NONE,line,word,fd,&current_line)){
+				return 1;
+			}
+
+			if(!read_line_skip_empty(fd,line,&current_line)){
+				rw_mesh_set_error(current_line,"Missing points block");
+				return 1;
+			}
 			string_cut_word(line,word);
-			if(strcmp(word,"POINTS")==0){
-				// first word POINTS
-				// next word must be CountOfPoints
-				string_cut_word(line,word);
-				if(sscanf(word,"%d",&a)!=1){
-					rw_mesh_set_error(current_line,"Can't read count of points.");
-					return 1;
-				}
-				VTK->CountOfPoints = a;
+		}
 
-				// the ending of line must be a vtk type
-				type = _parse_vtk_type(line);
-				if(type==RW_MESH_VTK_TYPE_NONE){
-					rw_mesh_set_error(current_line,"Unknown points type.");
-					return 1;
-				}
 
-				VTK->Points = (REAL*)calloc(VTK->CountOfPoints*3,sizeof(REAL));
-//				for(i=0;i<VTK->CountOfPoints;i++){
-//					read_line_trim(fd,line); current_line++;
-//
-//					for(k=0;k<3;k++){
-//						string_cut_word(line,word);
-//						if(_read_vtk_type_as_REAL_offset(type,word,VTK->Points,i*3+k)!=1){
-//							rw_mesh_set_error(current_line,"Error in reading points");
-//							return 1;
-//						}
-//					}
-//
-//				}
-				if(_read_vtk_array_as_REAL_type(fd,VTK->CountOfPoints*3,type,VTK->Points,&current_line)){
-					return 1;
-				}
+		{// Points block
 
-			}else if(strcmp(word,"CELLS")==0){
-				// first word CELLS
-				//next word must be CountOfCells
-				string_cut_word(line,word);
-				if(sscanf(word,"%d",&a)!=1){
-					rw_mesh_set_error(current_line,"Can't read count of cells.");
-					return 1;
-				}
-				VTK->CountOfCells = a;
+			// read name of block
+			if(strcmp(word,"POINTS")!=0){
+				rw_mesh_set_error(current_line,"Missing points block");
+				return 1;
+			}
 
-				//next word must be size
-				string_cut_word(line,word);
-				if(sscanf(word,"%d",&size)!=1){
-					rw_mesh_set_error(current_line,"Can't read count of cells.");
-					return 1;
-				}
+			// first word POINTS
+			// next word must be CountOfPoints
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(current_line,"Can't read count of points");
+				return 1;
+			}
+			UnstructuredGrid->CountOfPoints = a;
 
-				if(VTK->CountOfCells){
+			// the ending of line must be a vtk type
+			type = _parse_vtk_type(line);
+			if(type==RW_MESH_VTK_TYPE_NONE){
+				rw_mesh_set_error(current_line,"Unknown points type");
+				return 1;
+			}
 
-					size = size - VTK->CountOfCells;
+			UnstructuredGrid->Points = (REAL*)calloc(UnstructuredGrid->CountOfPoints*3,sizeof(REAL));
+			if(_read_vtk_array_as_REAL_type(fd,UnstructuredGrid->CountOfPoints*3,type,UnstructuredGrid->Points,&current_line)){
+				return 1;
+			}
 
-					VTK->CellOffset = (int*)calloc(VTK->CountOfCells+1,sizeof(int));
-					VTK->CellSizes = (int*)calloc(VTK->CountOfCells,sizeof(int));
-					VTK->Cells = (int*)calloc(size,sizeof(int));
+			CountOfPoints = UnstructuredGrid->CountOfPoints;
+		}
 
-					VTK->CellOffset[0] = 0;
+		{// Cells block
+			if(!read_line_skip_empty(fd,line,&current_line)){
+				rw_mesh_set_error(current_line,"Missing cells block");
+				return 1;
+			}
 
-					for(i=0;i<VTK->CountOfCells;i++){
-						//read numPointsi , p, j, k, l, ...
-						read_line_trim(fd,line); current_line++;
+			string_cut_word(line,word);
+			if(strcmp(word,"CELLS")!=0){
+				rw_mesh_set_error(current_line,"Missing cells block");
+				return 1;
+			}
 
-						string_cut_word(line,word);
-						if(sscanf(word,"%d",&a)!=1){
-							rw_mesh_set_error(current_line,"Can't read cell size.");
+			if(UnstructuredGrid->CountOfCells){
+				rw_mesh_set_error(current_line,"Cells block already reading");
+				return 1;
+			}
+
+			// first word CELLS
+			//next word must be CountOfCells
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(current_line,"Can't read count of cells");
+				return 1;
+			}
+			UnstructuredGrid->CountOfCells = a;
+
+			//next word must be size
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&size)!=1){
+				rw_mesh_set_error(current_line,"Can't read count of cell");
+				return 1;
+			}
+
+			if(UnstructuredGrid->CountOfCells){
+
+				size = size - UnstructuredGrid->CountOfCells;
+
+				UnstructuredGrid->CellOffset = (int*)calloc(UnstructuredGrid->CountOfCells+1,sizeof(int));
+				UnstructuredGrid->CellSizes = (int*)calloc(UnstructuredGrid->CountOfCells,sizeof(int));
+				UnstructuredGrid->Cells = (int*)calloc(size,sizeof(int));
+
+				UnstructuredGrid->CellOffset[0] = 0;
+
+				for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+					//read numPointsi , p, j, k, l, ...
+					read_line_trim(fd,line); current_line++;
+
+					string_cut_word(line,word);
+					if(sscanf(word,"%d",&a)!=1){
+						rw_mesh_set_error(current_line,"Can't read cell size");
+						return 1;
+					}
+					UnstructuredGrid->CellSizes[i] = a;
+
+					UnstructuredGrid->CellOffset[i+1] = UnstructuredGrid->CellOffset[i]+UnstructuredGrid->CellSizes[i];
+					if(i+1==UnstructuredGrid->CountOfCells){
+						if(UnstructuredGrid->CellOffset[i+1] != size){
+							rw_mesh_set_error(current_line,"Summary size of cells don't equal size of cells");
 							return 1;
 						}
-						VTK->CellSizes[i] = a;
-
-						VTK->CellOffset[i+1] = VTK->CellOffset[i]+VTK->CellSizes[i];
-						if(i+1==VTK->CountOfCells){
-							if(VTK->CellOffset[i+1] != size){
-								rw_mesh_set_error(current_line,"Summary size of cells don't equal size of cells.");
-								return 1;
-							}
-						}else{
-							if(VTK->CellOffset[i+1] > size){
-								rw_mesh_set_error(current_line,"Summary size of cells more than size of cells.");
-								return 1;
-							}
-						}
-						for(j=0;j<VTK->CellSizes[i];j++){
-							string_cut_word(line,word);
-							if(sscanf(word,"%d",&a)!=1){
-								rw_mesh_set_error(current_line,"Can't read cell vertex.");
-								return 1;
-							}
-							VTK->Cells[VTK->CellOffset[i]+j] = a;
+					}else{
+						if(UnstructuredGrid->CellOffset[i+1] > size){
+							rw_mesh_set_error(current_line,"Summary size of cells more than size of cells");
+							return 1;
 						}
 					}
+					for(j=0;j<UnstructuredGrid->CellSizes[i];j++){
+						string_cut_word(line,word);
+						if(sscanf(word,"%d",&a)!=1){
+							rw_mesh_set_error(current_line,"Can't read cell vertex");
+							return 1;
+						}
+						UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+j] = a;
+					}
 				}
-			}else if(strcmp(word,"CELL_TYPES")==0){
+				CountOfCells = UnstructuredGrid->CountOfCells;
+			}
+
+			{// Cell types block
+				if(!read_line_skip_empty(fd,line,&current_line)){
+					rw_mesh_set_error(current_line,"Missing cell types block");
+					return 1;
+				}
+
+				string_cut_word(line,word);
+				if(strcmp(word,"CELL_TYPES")!=0){
+					rw_mesh_set_error(current_line,"Missing cell types block");
+					return 1;
+				}
+
 				// first word CELL_TYPES
-				if(VTK->CountOfCells==0){
-					rw_mesh_set_error(current_line,"Block CELL_TYPES can't be before block CELLS.");
+				if(UnstructuredGrid->CountOfCells==0){
+					rw_mesh_set_error(current_line,"Block CELL_TYPES can't be before block CELLS");
 					return 1;
 				}
 
 				//next word must be CountOfCells
 				string_cut_word(line,word);
 				if(sscanf(word,"%d",&a)!=1){
-					rw_mesh_set_error(current_line,"Can't read count of cells (CELL_TYPES).");
+					rw_mesh_set_error(current_line,"Can't read count of cells (CELL_TYPES)");
 					return 1;
 				}
-				if(VTK->CountOfCells != a){
-					rw_mesh_set_error(current_line,"Count of cells type don't equal count of cells.");
+				if(UnstructuredGrid->CountOfCells != a){
+					rw_mesh_set_error(current_line,"Count of cells type don't equal count of cells");
 					return 1;
 				}
 
-				VTK->CellTypes = (int*)calloc(VTK->CountOfCells,sizeof(int));
+				UnstructuredGrid->CellTypes = (int*)calloc(UnstructuredGrid->CountOfCells,sizeof(int));
 
-				for(i=0;i<VTK->CountOfCells;i++){
+				for(i=0;i<UnstructuredGrid->CountOfCells;i++){
 					//read type_i
 					read_line_trim(fd,line); current_line++;
 					if(sscanf(line,"%d",&a)!=1){
-						rw_mesh_set_error(current_line,"Can't read count of cell type.");
+						rw_mesh_set_error(current_line,"Can't read count of cell type");
 						return 1;
 					}
-					VTK->CellTypes[i] = a;
-				}
-			}else if(strcmp(word,"POINT_DATA")==0){
-				//read countOfPoints
-				string_cut_word(line,word);
-				if(sscanf(word,"%d",&a)!=1){
-					rw_mesh_set_error(current_line,"Can't read countOfPoints of POINT_DATA.");
-					return 1;
-				}
-				if(VTK->CountOfPoints==0){
-					rw_mesh_set_error(current_line,"POINT_DATA block must be after POINTS block.");
-					return 1;
-				}
-				if(a!=VTK->CountOfPoints){
-					rw_mesh_set_error(current_line,"POINT_DATA countOfPoints don't equal POINTS countOfPoints.");
-					return 1;
-				}
-				data_type = 1;
-				data_size = a;
-			}else if(strcmp(word,"CELL_DATA")==0){
-				//read countOfCells
-				string_cut_word(line,word);
-				if(sscanf(word,"%d",&a)!=1){
-					rw_mesh_set_error(current_line,"Can't read countOfCells of CELL_DATA.");
-					return 1;
-				}
-				if(VTK->CountOfCells==0){
-					rw_mesh_set_error(current_line,"CELL_DATA block must be after CELLS block.");
-					return 1;
-				}
-				if(a!=VTK->CountOfCells){
-					rw_mesh_set_error(current_line,"CELL_DATA countOfCells don't equal CELLS countOfCells.");
-					return 1;
-				}
-				data_type = 1;
-				data_size = a;
-			}else if(strcmp(word,"FIELD")==0){
-				// first word FIELD
-
-				struct RW_MESH_VTK_DATASET_STRUCT*Data;
-				struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field;
-
-				Data = _vtk_add_data(VTK,data_type);
-
-				Data->DataType = RW_MESH_VTK_DATASET_TYPE_FIELD;
-				Data->Counts = 1;
-				Field = (struct RW_MESH_VTK_DATA_FIELD_STRUCT*)calloc(Data->Counts,sizeof(struct RW_MESH_VTK_DATA_FIELD_STRUCT));
-				Data->Data = Field;
-
-				//next word must be dataName
-				string_cut_word(line,word);
-				Data->DataName = (char*)calloc(strlen(word)+1,sizeof(char));
-				strcpy(Data->DataName,word);
-
-				Field->numArrays = 0;
-				Field->Arrays = NULL;
-
-				//next word must be numArrays
-				string_cut_word(line,word);
-				if(sscanf(word,"%d",&size)!=1){
-					rw_mesh_set_error(current_line,"Can't read size of FIELD.");
-					return 1;
-				}
-				Field->numArrays = size;
-
-				if(Field->numArrays){
-					Field->Arrays = (struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT*)calloc(Field->numArrays,sizeof(struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT));
-					for(i=0;i<Field->numArrays;i++){
-						//read arrays
-
-						//read arrayNamei numComponents numTuples dataType
-						read_line_trim(fd,line);current_line++;
-						// read arrayNamei
-						string_cut_word(line,word);
-						Field->Arrays[i].name = (char*)calloc(strlen(word)+1,sizeof(char));
-						strcpy(Field->Arrays[i].name,word);
-
-						//read numComponents
-						string_cut_word(line,word);
-						if(sscanf(word,"%d",&a)!=1){
-							rw_mesh_set_error(current_line,"Can't read numComponents of FIELD Array.");
-							return 1;
-						}
-						Field->Arrays[i].numComponents = a;
-
-						//read numTuples
-						string_cut_word(line,word);
-						if(sscanf(word,"%d",&a)!=1){
-							rw_mesh_set_error(current_line,"Can't read numTuples of FIELD Array.");
-							return 1;
-						}
-						Field->Arrays[i].numTuples = a;
-
-						//read dataType
-						string_cut_word(line,word);
-						Field->Arrays[i].dataType = _parse_vtk_type(word);
-
-						//f 00 f 01 ... f 0(numComponents-1)
-						if(Field->Arrays[i].numComponents*Field->Arrays[i].numTuples){
-							Field->Arrays[i].values = _vtk_type_allocate(Field->Arrays[i].dataType,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples);
-							if(_read_vtk_array_type(fd,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType,Field->Arrays[i].values,&current_line,0)){
-								return 1;
-							}
-						}
-
-					}
-				}
-
-			}else if(strcmp(word,"SCALARS")==0){
-				// first word SCALARS
-				struct RW_MESH_VTK_DATASET_STRUCT*Data;
-				struct RW_MESH_VTK_DATA_SCALARS_STRUCT*Scalars;
-
-				Data = _vtk_add_data(VTK,data_type);
-				Data->DataType = RW_MESH_VTK_DATASET_TYPE_SCALARS;
-				Data->Counts = data_size;
-				Scalars = (struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)calloc(Data->Counts,sizeof(struct RW_MESH_VTK_DATA_SCALARS_STRUCT));
-				Data->Data = Scalars;
-
-				//next word must be dataName
-				string_cut_word(line,word);
-				Data->DataName = (char*)calloc(strlen(word)+1,sizeof(char));
-				strcpy(Data->DataName,word);
-
-				//next word must be type
-				string_cut_word(line,word);
-				Scalars->dataType = _parse_vtk_type(word);
-
-				if(Scalars->dataType == RW_MESH_VTK_TYPE_NONE){
-					rw_mesh_set_error(current_line,"Unknown type.");
-					return 1;
-				}
-
-				//next word MAY be numComp
-				if(sscanf(line,"%u",&a)==1){
-					Scalars->numComp = a;
-				}else{
-					Scalars->numComp = 1;
-				}
-
-				read_line_trim(fd,line);current_line++;
-
-				string_get_word(line,word);
-				if(strcmp(word,"LOOKUP_TABLE")==0){
-					string_cut_word(line,word);
-					string_cut_word(line,word);
-					Scalars->LookupTable = (char*)calloc(strlen(word)+1,sizeof(char));
-					strcpy(Scalars->LookupTable,word);
-				}else{
-					line[0] = 0;
-				}
-
-				Scalars->values = _vtk_type_allocate(Scalars->dataType,Data->Counts*Scalars->numComp);
-				if(_read_vtk_array_type(fd,Data->Counts*Scalars->numComp,Scalars->dataType,Scalars->values,&current_line,line)){
-					return 1;
-				}
-			}else{
-				if( (flags&RW_MESH_VTK_SKIP_UNKNOWN)){
-					//do nothing, skip line
-				}else{
-					rw_mesh_set_error(current_line,"Unknown block");
-					return 1;
+					UnstructuredGrid->CellTypes[i] = a;
 				}
 			}
+
 		}
 
 	}else if(strcmp(word,"FIELD")==0){
 		RW_MESH_VTK_TYPE_FIELD;
-		rw_mesh_set_error(current_line,"Type of DATASET is FIELD. It isn't supported in current version of reader.");
+		rw_mesh_set_error(current_line,"Type of DATASET is FIELD. It isn't supported in current version of reader");
 		return 1;
 	}else{
-		rw_mesh_set_error(current_line,"Unknown type of DATASET. It must be STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, POLYDATA, UNSTRUCTURED_GRID or FIELD.");
+		rw_mesh_set_error(current_line,"Unknown type of DATASET. It must be STRUCTURED_POINTS, STRUCTURED_GRID, RECTILINEAR_GRID, POLYDATA, UNSTRUCTURED_GRID or FIELD");
 		return 1;
 	}
+
+	data_object = RW_MESH_VTK_DATA_OBJECT_NONE;
+	data_size = 0;
+
+	// read blocks
+	while(read_line_skip_empty(fd,line,&current_line)>=0){
+		// read name of block
+		string_cut_word(line,word);
+		if(strcmp(word,"POINT_DATA")==0){
+			//read countOfPoints
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(current_line,"Can't read countOfPoints of POINT_DATA");
+				return 1;
+			}
+			if(CountOfPoints==0){
+				rw_mesh_set_error(current_line,"POINT_DATA block must be after POINTS block");
+				return 1;
+			}
+			if(a!=CountOfPoints){
+				rw_mesh_set_error(current_line,"POINT_DATA countOfPoints don't equal POINTS countOfPoints");
+				return 1;
+			}
+			data_object = RW_MESH_VTK_DATA_OBJECT_POINTS;
+			data_size = a;
+		}else if(strcmp(word,"CELL_DATA")==0){
+			//read countOfCells
+			string_cut_word(line,word);
+			if(sscanf(word,"%d",&a)!=1){
+				rw_mesh_set_error(current_line,"Can't read countOfCells of CELL_DATA");
+				return 1;
+			}
+			if(CountOfCells==0){
+				rw_mesh_set_error(current_line,"CELL_DATA block must be after CELLS block");
+				return 1;
+			}
+			if(a!=CountOfCells){
+				rw_mesh_set_error(current_line,"CELL_DATA countOfCells don't equal CELLS countOfCells");
+				return 1;
+			}
+			data_object = RW_MESH_VTK_DATA_OBJECT_CELLS;
+			data_size = a;
+		}else if(strcmp(word,"FIELD")==0){
+			// first word FIELD
+
+			_vtk_read_field_data(VTK,data_object,line,word,fd,&current_line);
+
+		}else if(strcmp(word,"SCALARS")==0){
+			// first word SCALARS
+			struct RW_MESH_VTK_DATASET_STRUCT*Data;
+			struct RW_MESH_VTK_DATA_SCALARS_STRUCT*Scalars;
+
+			Data = _vtk_add_data(VTK,data_object);
+			Data->DataType = RW_MESH_VTK_DATASET_TYPE_SCALARS;
+			Data->Counts = data_size;
+			Scalars = (struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)calloc(Data->Counts,sizeof(struct RW_MESH_VTK_DATA_SCALARS_STRUCT));
+			Data->Data = Scalars;
+
+			//next word must be dataName
+			string_cut_word(line,word);
+			Data->DataName = (char*)calloc(strlen(word)+1,sizeof(char));
+			strcpy(Data->DataName,word);
+
+			//next word must be type
+			string_cut_word(line,word);
+			Scalars->dataType = _parse_vtk_type(word);
+
+			if(Scalars->dataType == RW_MESH_VTK_TYPE_NONE){
+				rw_mesh_set_error(current_line,"Unknown type");
+				return 1;
+			}
+
+			//next word MAY be numComp
+			if(sscanf(line,"%u",&a)==1){
+				Scalars->numComp = a;
+			}else{
+				Scalars->numComp = 1;
+			}
+
+			read_line_trim(fd,line);current_line++;
+
+			string_get_word(line,word);
+			if(strcmp(word,"LOOKUP_TABLE")==0){
+				string_cut_word(line,word);
+				string_cut_word(line,word);
+				Scalars->LookupTable = (char*)calloc(strlen(word)+1,sizeof(char));
+				strcpy(Scalars->LookupTable,word);
+			}else{
+				line[0] = 0;
+			}
+
+			Scalars->values = _vtk_type_allocate(Scalars->dataType,Data->Counts*Scalars->numComp);
+			if(_read_vtk_array_type(fd,Data->Counts*Scalars->numComp,Scalars->dataType,Scalars->values,&current_line,line)){
+				return 1;
+			}
+		}else{
+			if( (flags&RW_MESH_VTK_SKIP_UNKNOWN)){
+				//do nothing, skip line
+			}else{
+				rw_mesh_set_error(current_line,"Unknown block");
+				return 1;
+			}
+		}
+	}
+
 
 	return 0;
 }
@@ -817,8 +1078,8 @@ void _write_function(int FunctionSize,REAL*Function,int size,int offset,int type
 	int i;
 	for(i=0;i<FunctionSize;i++){
 		switch(type){
-		case RW_MESH_VTK_TYPE_FLOAT:	Function[size*i+offset] = ((float*)data)[data_size*i+offset];break;
-		case RW_MESH_VTK_TYPE_DOUBLE:	Function[size*i+offset] = ((double*)data)[data_size*i+offset];break;
+		case RW_MESH_VTK_TYPE_FLOAT:	Function[size*i+offset] = ((float*)data)[data_size*i+data_offset];break;
+		case RW_MESH_VTK_TYPE_DOUBLE:	Function[size*i+offset] = ((double*)data)[data_size*i+data_offset];break;
 		}
 	}
 }
@@ -891,34 +1152,42 @@ int read_format_vtk_unstructured_simplified(
 
 	int i,j,k;
 	int rn;
-	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT VTK;
-	rw_mesh_vtk_struct_init(&VTK);
+	struct RW_MESH_VTK_STRUCT*VTK;
+	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*UnstructedGrid;
 
-	rn = read_format_vtk_unstructured_in_struct(&VTK,filename,flags);
+	VTK = (struct RW_MESH_VTK_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_STRUCT));
+	rw_mesh_vtk_struct_init(VTK);
+
+	rn = read_format_vtk_struct(VTK,filename,flags);
 	if(rn){
-		rw_mesh_vtk_struct_free(&VTK);
+		rw_mesh_vtk_struct_free(VTK);
+		free(VTK);
 		return 1;
 	}
 
+	if(VTK->type != RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID){
+		rw_mesh_set_error(0,"It isn't unstructed grid, it's some other type of grid");
+		return 1;
+	}
+
+	UnstructedGrid = VTK->Grid;
+
 	if(CountOfPoints){
-		*CountOfPoints = VTK.CountOfPoints;
+		*CountOfPoints = UnstructedGrid->CountOfPoints;
 	}
 
 	if(Points){
-		if(VTK.CountOfPoints){
-			*Points = (REAL3*)calloc(VTK.CountOfPoints,sizeof(REAL3));
-			for(i=0;i<VTK.CountOfPoints;i++)
-				for(k=0;k<3;k++)
-					(*Points)[i][k] = VTK.Points[i*3+k];
-
+		if(UnstructedGrid->CountOfPoints){
+			*Points = (REAL3*)calloc(UnstructedGrid->CountOfPoints,sizeof(REAL3));
+			memcpy(*Points,UnstructedGrid->Points,UnstructedGrid->CountOfPoints*3*sizeof(REAL));
 		}else{
 			*Points = NULL;
 		}
 	}
 
-	if(VTK.CountOfPointsData){
-		_simplify_data_to_masks(VTK.CountOfPoints,VTK.CountOfPointsData,VTK.PointsData,CountOfPointMasks,PointMasks);
-		_simplify_data_to_functions(VTK.CountOfPoints,VTK.CountOfPointsData,VTK.PointsData,CountOfPointFunctions,PointFunctions);
+	if(VTK->CountOfPointsData){
+		_simplify_data_to_masks(UnstructedGrid->CountOfPoints,VTK->CountOfPointsData,VTK->PointsData,CountOfPointMasks,PointMasks);
+		_simplify_data_to_functions(UnstructedGrid->CountOfPoints,VTK->CountOfPointsData,VTK->PointsData,CountOfPointFunctions,PointFunctions);
 	}else{
 		if(CountOfPointMasks)*CountOfPointMasks=0;
 		if(PointMasks)*PointMasks=NULL;
@@ -927,52 +1196,48 @@ int read_format_vtk_unstructured_simplified(
 	}
 
 	if(CountOfCells){
-		*CountOfCells = VTK.CountOfCells;
+		*CountOfCells = UnstructedGrid->CountOfCells;
 	}
 
 	if(Cells){
-		if(VTK.CountOfCells && VTK.Cells && VTK.CellOffset && VTK.CellOffset[VTK.CountOfCells]){
-			*Cells = (int*)calloc(VTK.CellOffset[VTK.CountOfCells],sizeof(int));
-			for(i=0;i<VTK.CellOffset[VTK.CountOfCells];i++)
-				(*Cells)[i] = VTK.Cells[i];
+		if(UnstructedGrid->CountOfCells && UnstructedGrid->Cells && UnstructedGrid->CellOffset && UnstructedGrid->CellOffset[UnstructedGrid->CountOfCells]){
+			*Cells = (int*)calloc(UnstructedGrid->CellOffset[UnstructedGrid->CountOfCells],sizeof(int));
+			memcpy(*Cells,UnstructedGrid->Cells,UnstructedGrid->CellOffset[UnstructedGrid->CountOfCells]*sizeof(int));
 		}else{
 			*Cells = NULL;
 		}
 	}
 
 	if(CellSizes){
-		if(VTK.CountOfCells && VTK.CellSizes){
-			*CellSizes = (int*)calloc(VTK.CountOfCells,sizeof(int));
-			for(i=0;i<VTK.CountOfCells;i++)
-				(*CellSizes)[i] = VTK.CellSizes[i];
+		if(UnstructedGrid->CountOfCells && UnstructedGrid->CellSizes){
+			*CellSizes = (int*)calloc(UnstructedGrid->CountOfCells,sizeof(int));
+			memcpy(*CellSizes,UnstructedGrid->CellSizes,UnstructedGrid->CountOfCells*sizeof(int));
 		}else{
 			*CellSizes = NULL;
 		}
 	}
 
 	if(CellTypes){
-		if(VTK.CountOfCells && VTK.CellTypes){
-			*CellTypes = (int*)calloc(VTK.CountOfCells,sizeof(int));
-			for(i=0;i<VTK.CountOfCells;i++)
-				(*CellTypes)[i] = VTK.CellTypes[i];
+		if(UnstructedGrid->CountOfCells && UnstructedGrid->CellTypes){
+			*CellTypes = (int*)calloc(UnstructedGrid->CountOfCells,sizeof(int));
+			memcpy(*CellTypes,UnstructedGrid->CellTypes,UnstructedGrid->CountOfCells*sizeof(int));
 		}else{
 			*CellTypes = NULL;
 		}
 	}
 
 	if(CellOffset){
-		if(VTK.CountOfCells && VTK.CellOffset){
-			*CellOffset = (int*)calloc(VTK.CountOfCells+1,sizeof(int));
-			for(i=0;i<=VTK.CountOfCells;i++)
-				(*CellOffset)[i] = VTK.CellOffset[i];
+		if(UnstructedGrid->CountOfCells && UnstructedGrid->CellOffset){
+			*CellOffset = (int*)calloc(UnstructedGrid->CountOfCells+1,sizeof(int));
+			memcpy(*CellOffset,UnstructedGrid->CellOffset,(UnstructedGrid->CountOfCells+1)*sizeof(int));
 		}else{
 			*CellOffset = NULL;
 		}
 	}
 
-	if(VTK.CountOfCellsData){
-		_simplify_data_to_masks(VTK.CountOfCells,VTK.CountOfCellsData,VTK.CellsData,CountOfCellMasks,CellMasks);
-		_simplify_data_to_functions(VTK.CountOfCells,VTK.CountOfCellsData,VTK.CellsData,CountOfCellFunctions,CellFunctions);
+	if(VTK->CountOfCellsData){
+		_simplify_data_to_masks(UnstructedGrid->CountOfCells,VTK->CountOfCellsData,VTK->CellsData,CountOfCellMasks,CellMasks);
+		_simplify_data_to_functions(UnstructedGrid->CountOfCells,VTK->CountOfCellsData,VTK->CellsData,CountOfCellFunctions,CellFunctions);
 	}else{
 		if(CountOfCellMasks)*CountOfCellMasks=0;
 		if(CellMasks)*CellMasks=NULL;
@@ -984,6 +1249,604 @@ int read_format_vtk_unstructured_simplified(
 }
 
 
+int _get_data_type_name(int DataType,char*string){
+	switch(DataType){
+	case RW_MESH_VTK_TYPE_BIT:
+		strcpy(string,"bit");
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_CHAR:
+		strcpy(string,"unsigned_char");
+		break;
+	case RW_MESH_VTK_TYPE_CHAR:
+		strcpy(string,"char");
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_SHORT:
+		strcpy(string,"unsigned_short");
+		break;
+	case RW_MESH_VTK_TYPE_SHORT:
+		strcpy(string,"short");
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_INT:
+		strcpy(string,"unsigned_int");
+		break;
+	case RW_MESH_VTK_TYPE_INT:
+		strcpy(string,"int");
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_LONG:
+		strcpy(string,"unsigned_long");
+		break;
+	case RW_MESH_VTK_TYPE_LONG:
+		strcpy(string,"long");
+		break;
+	case RW_MESH_VTK_TYPE_FLOAT:
+		strcpy(string,"float");
+		break;
+	case RW_MESH_VTK_TYPE_DOUBLE:
+		strcpy(string,"double");
+		break;
+	default:
+		strcpy(string,"unknown");
+	}
+	return 0;
+}
+
+int _write_array_data_type(FILE*fd,void*Data,int Count,int DataType){
+#define _write(format,what) for(i=j=0;i<Count;i++) fprintf(fd,format "%c",(what),((i+1)%9 && ((i+1)<Count))?' ':'\n');
+	int i,j;
+	switch(DataType){
+	case RW_MESH_VTK_TYPE_BIT:
+		_write("%c",((char*)Data)[i]?'1':'0');
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_CHAR:
+		_write("%c",((char*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_CHAR:
+		_write("%c",((char*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_SHORT:
+		_write("%hu",((unsigned short*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_SHORT:
+		_write("%hd",((short*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_INT:
+		_write("%u",((unsigned int*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_INT:
+		_write("%d",((int*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_LONG:
+		_write("%lu",((unsigned long*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_LONG:
+		_write("%ld",((long*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_FLOAT:
+		_write("%f",((float*)Data)[i]);
+		break;
+	case RW_MESH_VTK_TYPE_DOUBLE:
+		_write("%lf",((double*)Data)[i]);
+		break;
+	default:
+		_write("%d",((int*)Data)[i]);
+		break;
+	}
+
+
+#undef ___write
+	return 0;
+}
+int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data){
+	int i;
+	char string[256];
+	struct RW_MESH_VTK_DATA_SCALARS_STRUCT*Scalar;
+	struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field;
+
+	switch(Data->DataType){
+	case RW_MESH_VTK_DATASET_TYPE_NONE:
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_SCALARS:
+		fprintf(fd,"SCALARS");
+		Scalar = (struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)Data->Data;
+
+		//dataName
+		if(Data->DataName){
+			fprintf(fd," %s",Data->DataName);
+		}else{
+			// если нет имени, пишем вместо имени адресс
+			fprintf(fd," %p",Data);
+		}
+
+		//dataType
+		_get_data_type_name(Scalar->dataType,string);
+		fprintf(fd," %s",string);
+
+		if(Scalar->numComp>1){
+			//numComp
+			fprintf(fd," %d",Scalar->numComp);
+		}else{
+			//default 1
+		}
+		fprintf(fd,"\n");
+
+		if(Scalar->LookupTable){
+			fprintf(fd,"LOOKUP_TABLE %s\n",Scalar->LookupTable);
+		}else{
+			//fprintf(fd,"LOOKUP_TABLE default\n");
+		}
+
+		_write_array_data_type(fd,Scalar->values,Scalar->numComp*Data->Counts,Scalar->dataType);
+
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_COLOR_SCALARS:
+		//fprintf(fd,"COLOR_SCALARS");
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_LOOKUP_TABLE:
+		//fprintf(fd,"LOOKUP_TABLE");
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_VECTORS:
+		//fprintf(fd,"VECTORS");
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_NORMALS:
+		//fprintf(fd,"NORMALS");
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_TEXTURE_COORDINATES:
+		//fprintf(fd,"TEXTURE_COORDINATES");
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_TENSORS:
+		//fprintf(fd,"TENSORS");
+		break;
+	case RW_MESH_VTK_DATASET_TYPE_FIELD:
+		fprintf(fd,"FIELD");
+
+		Field = (struct RW_MESH_VTK_DATA_FIELD_STRUCT*)Data->Data;
+
+		//dataName
+		if(Data->DataName){
+			fprintf(fd," %s",Data->DataName);
+		}else{
+			// если нет имени, пишем вместо имени адресс
+			fprintf(fd," %p",Data);
+		}
+
+		//numArrays
+		fprintf(fd," %d\n",Field->numArrays);
+
+		for(i=0;i<Field->numArrays;i++){
+			//arrayName
+			if(Field->Arrays[i].name){
+				fprintf(fd,"%s",Field->Arrays[i].name);
+			}else{
+				fprintf(fd,"Array%d",i);
+			}
+			//numComponents
+			fprintf(fd," %d",Field->Arrays[i].numComponents);
+
+			//numTuples
+			fprintf(fd," %d",Field->Arrays[i].numTuples);
+
+			//dataType
+			_get_data_type_name(Field->Arrays[i].dataType,string);
+			fprintf(fd," %s\n",string);
+
+			_write_array_data_type(fd,Field->Arrays[i].values,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType);
+
+		}
+
+		break;
+	}
+
+
+	return 0;
+}
+
+
+int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int flags){
+
+	__save_locale;
+
+	FILE*fd;
+	int i,j,k;
+	int a,b,c;
+	int p,f,d;
+	int rn;
+	int size;
+	int type;
+	int data_type,data_size;
+	int CountOfPoints;
+	int CountOfCells;
+
+	struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*	StructuredPoints;
+	struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*		StructuredGrid;
+	struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*		RectilinerGrid;
+	struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*		PolygonalData;
+	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*	UnstructuredGrid;
+
+	StructuredPoints	= NULL;
+	StructuredGrid		= NULL;
+	RectilinerGrid		= NULL;
+	PolygonalData		= NULL;
+	UnstructuredGrid	= NULL;
+
+	CountOfPoints = 0;
+	CountOfCells = 0;
+
+	rw_mesh_set_filename(filename);
+	fd=fopen(filename,"w");if(fd==NULL){
+		rw_mesh_set_error(0,"Can't open file");
+		return 1;
+	}
+
+	fprintf(fd,"# vtk DataFile Version 3.0\n");
+	fprintf(fd,"File generated be rw_mesh\n");
+	fprintf(fd,"ASCII\n");
+
+	if(VTK->type == RW_MESH_VTK_TYPE_STRUCTURED_POINTS){
+		rw_mesh_set_error(0,"Structured point isn't supported in current version of writer");
+		fclose(fd);
+		return 1;
+	}else if(VTK->type == RW_MESH_VTK_TYPE_STRUCTURED_GRID){
+		fprintf(fd,"DATASET STRUCTURED_GRID\n");
+		StructuredGrid = (struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*)VTK->Grid;
+		fprintf(fd,"DIMENSIONS %d %d %d\n",StructuredGrid->Nx,StructuredGrid->Ny,StructuredGrid->Nz);
+		CountOfPoints = StructuredGrid->Nx*StructuredGrid->Ny*StructuredGrid->Nz;
+		CountOfCells = (StructuredGrid->Nx-1)*(StructuredGrid->Ny-1)*(StructuredGrid->Nz-1);
+		fprintf(fd,"POINTS %d ",CountOfPoints);
+		if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+			fprintf(fd,"float");
+		}else{
+			fprintf(fd,"double");
+		}
+		fprintf(fd,"\n");
+
+		for(i=0;i<CountOfPoints;i++){
+			if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+				fprintf(fd,"%f %f %f\n",StructuredGrid->Points[i*3],StructuredGrid->Points[i*3+1],StructuredGrid->Points[i*3+2]);
+			}else{
+				fprintf(fd,"%lf %lf %lf\n",StructuredGrid->Points[i*3],StructuredGrid->Points[i*3+1],StructuredGrid->Points[i*3+2]);
+			}
+		}
+
+	}else if(VTK->type == RW_MESH_VTK_TYPE_RECTILINEAR_GRID){
+		rw_mesh_set_error(0,"Structured point isn't supported in current version of writer");
+		fclose(fd);
+		return 1;
+	}else if(VTK->type == RW_MESH_VTK_TYPE_POLYGONAL_DATA){
+		rw_mesh_set_error(0,"Structured point isn't supported in current version of writer");
+		fclose(fd);
+		return 1;
+	}else if(VTK->type == RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID){
+		fprintf(fd,"DATASET UNSTRUCTURED_GRID\n");
+		UnstructuredGrid = (struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*)VTK->Grid;
+		fprintf(fd,"POINTS %d ",UnstructuredGrid->CountOfPoints);
+		if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+			fprintf(fd,"float");
+		}else{
+			fprintf(fd,"double");
+		}
+		fprintf(fd,"\n");
+
+		for(i=0;i<UnstructuredGrid->CountOfPoints;i++){
+			if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+				fprintf(fd,"%f %f %f\n",UnstructuredGrid->Points[i*3],UnstructuredGrid->Points[i*3+1],UnstructuredGrid->Points[i*3+2]);
+			}else{
+				fprintf(fd,"%lf %lf %lf\n",UnstructuredGrid->Points[i*3],UnstructuredGrid->Points[i*3+1],UnstructuredGrid->Points[i*3+2]);
+			}
+		}
+
+		fprintf(fd,"CELLS %d %d\n",UnstructuredGrid->CountOfCells,UnstructuredGrid->CountOfCells+UnstructuredGrid->CellOffset[UnstructuredGrid->CountOfCells]);
+		for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+			fprintf(fd,"%d",UnstructuredGrid->CellSizes[i]);
+			for(j=0;j<UnstructuredGrid->CellSizes[i];j++)
+				fprintf(fd," %d",UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+j]);
+			fprintf(fd,"\n");
+		}
+
+		fprintf(fd,"CELL_TYPES %d\n",UnstructuredGrid->CountOfCells);
+		for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+			fprintf(fd,"%d%c",UnstructuredGrid->CellTypes[i],((i+1)%20&&((i+1)<UnstructuredGrid->CountOfCells))?' ':'\n');
+		}
+
+		CountOfPoints = UnstructuredGrid->CountOfPoints;
+		CountOfCells = UnstructuredGrid->CountOfCells;
+	}
+
+	if(VTK->CountOfPointsData){
+		fprintf(fd,"POINT_DATA %d\n",CountOfPoints);
+		for(i=0;i<VTK->CountOfPointsData;i++)
+			_write_data(fd,VTK->PointsData+i);
+	}
+
+	if(VTK->CountOfCellsData){
+		fprintf(fd,"CELL_DATA %d\n",CountOfCells);
+		for(i=0;i<VTK->CountOfCellsData;i++)
+			_write_data(fd,VTK->CellsData+i);
+	}
+
+	fclose(fd);
+	return 0;
+}
+
+void vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values){
+	int i,j;
+	struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT* Array;
+
+	if(Field->numArrays == 0){
+		Field->numArrays = 1;
+		Field->Arrays = (struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT));
+		Array = Field->Arrays+0;
+	}else{
+		Field->numArrays++;
+		Field->Arrays = (struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT*)realloc(Field->Arrays,Field->numArrays*sizeof(struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT));
+		Array = Field->Arrays+Field->numArrays-1;
+	}
+
+	Array->dataType = type;//RW_MESH_VTK_TYPE_DOUBLE;
+	Array->name = (char*)calloc(strlen(name)+1,sizeof(char));
+	strcpy(Array->name,name);
+	Array->numComponents = numComp;
+	Array->numTuples = Count;
+
+
+	Array->values = calloc(Array->numComponents*Array->numTuples,_vtk_type_size(type));
+	memcpy(Array->values,Values,Array->numComponents*Array->numTuples*_vtk_type_size(type));
+
+
+}
+
+struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_structured_simplified(int Nx,int Ny,int Nz, REAL3*Points){
+	struct RW_MESH_VTK_STRUCT*VTK;
+	struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*StructuredGrid;
+
+	VTK = (struct RW_MESH_VTK_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_STRUCT));
+	rw_mesh_vtk_struct_init(VTK);
+
+	StructuredGrid = (struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT));
+	rw_mesh_vtk_structured_grid_struct_init(StructuredGrid);
+
+	VTK->type = RW_MESH_VTK_TYPE_STRUCTURED_GRID;
+	VTK->Grid = StructuredGrid;
+
+	StructuredGrid->Nx = Nx;
+	StructuredGrid->Ny = Ny;
+	StructuredGrid->Nz = Nz;
+
+	StructuredGrid->Points = (REAL*)calloc(Nx*Ny*Nz,3*sizeof(REAL));
+	memcpy(StructuredGrid->Points,Points,Nx*Ny*Nz*3*sizeof(REAL));
+
+	return VTK;
+}
+
+struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified(int CountOfPoints, REAL3*Points,int CountOfCells,int*Cells,int*CellSizes,int*CellTypes,int*CellOffset){
+	struct RW_MESH_VTK_STRUCT*VTK;
+	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*UnstructuredGrid;
+
+	VTK = (struct RW_MESH_VTK_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_STRUCT));
+	rw_mesh_vtk_struct_init(VTK);
+
+	UnstructuredGrid = (struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT));
+	rw_mesh_vtk_unstructured_grid_struct_init(UnstructuredGrid);
+
+	VTK->type = RW_MESH_VTK_TYPE_STRUCTURED_GRID;
+	VTK->Grid = UnstructuredGrid;
+
+	UnstructuredGrid->CountOfPoints = CountOfPoints;
+	UnstructuredGrid->Points = (REAL*)calloc(CountOfPoints,3*sizeof(REAL));
+	memcpy(UnstructuredGrid->Points,Points,CountOfPoints*3*sizeof(REAL));
+
+	UnstructuredGrid->CountOfCells = CountOfCells;
+
+	UnstructuredGrid->CellSizes = (int*)calloc(CountOfCells,sizeof(int));
+	memcpy(UnstructuredGrid->CellSizes,CellSizes,CountOfCells*sizeof(int));
+
+	UnstructuredGrid->CellTypes = (int*)calloc(CountOfCells,sizeof(int));
+	memcpy(UnstructuredGrid->CellTypes,CellTypes,CountOfCells*sizeof(int));
+
+	UnstructuredGrid->CellOffset = (int*)calloc(CountOfCells+1,sizeof(int));
+	memcpy(UnstructuredGrid->CellOffset,CellOffset,(CountOfCells+1)*sizeof(int));
+
+	UnstructuredGrid->Cells = (int*)calloc(CellOffset[CountOfCells],sizeof(int));
+	memcpy(UnstructuredGrid->Cells,Cells,CellOffset[CountOfCells]*sizeof(int));
+
+	return VTK;
+}
+
+int rw_mesh_vtk_add_scalars(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,char*name){
+	struct RW_MESH_VTK_DATASET_STRUCT*Data;
+	struct RW_MESH_VTK_DATA_SCALARS_STRUCT*Scalars;
+
+	Data = _vtk_add_data(VTK,data_object);
+
+	Data->Counts = Count;
+	if(name){
+		Data->DataName = (char*)calloc(strlen(name)+1,sizeof(char));
+		strcpy(Data->DataName,name);
+	}else{
+		Data->DataName = NULL;
+	}
+
+	Data->DataType = RW_MESH_VTK_DATASET_TYPE_SCALARS;
+	Scalars = (struct RW_MESH_VTK_DATA_SCALARS_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_DATA_SCALARS_STRUCT));
+	Data->Data = Scalars;
+
+	Scalars->dataType = data_type;
+	Scalars->numComp = 1;
+
+	Scalars->LookupTable = (char*)calloc(strlen("default")+1,sizeof(char));
+	strcpy(Scalars->LookupTable,"default");
+
+	Scalars->values = calloc(Count,_vtk_type_size(data_type));
+	memcpy(Scalars->values,values,Count*_vtk_type_size(data_type));
+
+	return 0;
+}
+
+int rw_mesh_vtk_add_mask(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int*Mask,char*name){
+	return rw_mesh_vtk_add_scalars(VTK,data_object,Count,RW_MESH_VTK_TYPE_INT,Mask,name);
+}
+
+int rw_mesh_vtk_add_mask_points(struct RW_MESH_VTK_STRUCT*VTK,int Count,int*Mask,char*name){
+	return rw_mesh_vtk_add_mask(VTK,RW_MESH_VTK_DATA_OBJECT_POINTS,Count,Mask,name);
+}
+int rw_mesh_vtk_add_mask_cells(struct RW_MESH_VTK_STRUCT*VTK,int Count,int*Mask,char*name){
+	return rw_mesh_vtk_add_mask(VTK,RW_MESH_VTK_DATA_OBJECT_CELLS,Count,Mask,name);
+}
+
+int rw_mesh_vtk_add_function(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,REAL*Function,char*name){
+	return rw_mesh_vtk_add_scalars(VTK,data_object,Count,RW_MESH_VTK_TYPE_DOUBLE,Function,name);
+}
+int rw_mesh_vtk_add_function_points(struct RW_MESH_VTK_STRUCT*VTK,int Count,REAL*Function,char*name){
+	return rw_mesh_vtk_add_function(VTK,RW_MESH_VTK_DATA_OBJECT_POINTS,Count,Function,name);
+}
+int rw_mesh_vtk_add_function_cells(struct RW_MESH_VTK_STRUCT*VTK,int Count,REAL*Function,char*name){
+	return rw_mesh_vtk_add_function(VTK,RW_MESH_VTK_DATA_OBJECT_CELLS,Count,Function,name);
+}
+
+int write_format_vtk_structured_simplified(
+		int Nx,int Ny,int Nz, REAL3*Points,
+		int CountOfPointMasks, int*PointMasks,
+		int CountOfPointFunctions, REAL*PointFunctions,
+
+		int CountOfCellMasks, int*CellMasks,
+		int CountOfCellFunctions, REAL*CellFunctions,
+
+		char*filename,int flags){
+
+	struct RW_MESH_VTK_STRUCT*VTK;
+	int i,k;
+	int CountOfPoints,CountOfCells;
+	int*Mask;
+	REAL*Functions;
+	char name[256];
+
+	VTK = rw_mesh_vtk_create_structured_simplified(Nx,Ny,Nz,Points);
+
+	CountOfPoints = Nx*Ny*Nz;
+	CountOfCells = (Nx-1)*(Ny-1)*(Nz-1);
+
+	if(CountOfPointMasks){
+		Mask = (int*)calloc(CountOfPoints,sizeof(int));
+		for(i=0;i<CountOfPointMasks;i++){
+			sprintf(name,"points_mask_%d",i+1);
+			for(k=0;k<CountOfPoints;k++)
+				Mask[k] = PointMasks[k*CountOfPointMasks+i];
+			rw_mesh_vtk_add_mask_points(VTK,CountOfPoints,Mask,name);
+		}
+		ffree(Mask);
+	}
+
+	if(CountOfPointFunctions){
+		Functions = (REAL*)calloc(CountOfPoints,sizeof(REAL));
+		for(i=0;i<CountOfPointFunctions;i++){
+			sprintf(name,"points_function_%d",i+1);
+			for(k=0;k<CountOfPoints;k++)
+				Functions[k] = PointFunctions[k*CountOfPointFunctions+i];
+			rw_mesh_vtk_add_function_points(VTK,CountOfPoints,Functions,name);
+		}
+		free(Functions);
+	}
+
+	if(CountOfCellMasks){
+		Mask = (int*)calloc(CountOfCells,sizeof(int));
+		for(i=0;i<CountOfCellMasks;i++){
+			sprintf(name,"cells_mask_%d",i+1);
+			for(k=0;k<CountOfCells;k++)
+				Mask[k] = PointMasks[k*CountOfCellMasks+i];
+			rw_mesh_vtk_add_mask_cells(VTK,CountOfCells,Mask,name);
+		}
+		ffree(Mask);
+	}
+
+	if(CountOfCellFunctions){
+		Functions = (REAL*)calloc(CountOfCells,sizeof(REAL));
+		for(i=0;i<CountOfCellFunctions;i++){
+			sprintf(name,"cells_function_%d",i+1);
+			for(k=0;k<CountOfCells;k++)
+				Functions[k] = PointFunctions[k*CountOfCellFunctions+i];
+			rw_mesh_vtk_add_function_cells(VTK,CountOfCells,Functions,name);
+		}
+		free(Functions);
+	}
+
+	i = write_format_vtk_struct(VTK,filename,flags);
+	rw_mesh_vtk_struct_free(VTK);
+	ffree(VTK);
+
+	return i;
+}
+
+
+int write_format_vtk_unstructured_simplified(
+	int CountOfPoints, REAL3*Points,
+	int CountOfPointMasks, int*PointMasks,
+	int CountOfPointFunctions, REAL*PointFunctions,
+
+	int CountOfCells,int*Cells,int*CellSizes,int*CellTypes,int*CellOffset,
+	int CountOfCellMasks, int*CellMasks,
+	int CountOfCellFunctions, REAL*CellFunctions,
+
+	char*filename,int flags){
+
+
+	struct RW_MESH_VTK_STRUCT*VTK;
+	int i,k;
+	int*Mask;
+	REAL*Functions;
+	char name[256];
+
+	VTK = rw_mesh_vtk_create_unstructured_simplified(CountOfPoints,Points,CountOfCells,Cells,CellSizes,CellTypes,CellOffset);
+
+	if(CountOfPointMasks){
+		Mask = (int*)calloc(CountOfPoints,sizeof(int));
+		for(i=0;i<CountOfPointMasks;i++){
+			sprintf(name,"mask_%d",i+1);
+			for(k=0;k<CountOfPoints;k++)
+				Mask[k] = PointMasks[k*CountOfPointMasks+i];
+			rw_mesh_vtk_add_mask_points(VTK,CountOfPoints,Mask,name);
+		}
+		ffree(Mask);
+	}
+
+	if(CountOfPointMasks){
+		Functions = (REAL*)calloc(CountOfPoints,sizeof(REAL));
+		for(i=0;i<CountOfPointMasks;i++){
+			sprintf(name,"function_%d",i+1);
+			for(k=0;k<CountOfPoints;k++)
+				Functions[k] = PointFunctions[k*CountOfPointMasks+i];
+			rw_mesh_vtk_add_function_points(VTK,CountOfPoints,Functions,name);
+		}
+		free(Functions);
+	}
+
+	if(CountOfPointMasks){
+		Mask = (int*)calloc(CountOfPoints,sizeof(int));
+		for(i=0;i<CountOfPointMasks;i++){
+			sprintf(name,"mask_%d",i+1);
+			for(k=0;k<CountOfPoints;k++)
+				Mask[k] = PointMasks[k*CountOfPointMasks+i];
+			rw_mesh_vtk_add_mask_points(VTK,CountOfPoints,Mask,name);
+		}
+		ffree(Mask);
+	}
+
+	if(CountOfPointMasks){
+		Functions = (REAL*)calloc(CountOfPoints,sizeof(REAL));
+		for(i=0;i<CountOfPointMasks;i++){
+			sprintf(name,"function_%d",i+1);
+			for(k=0;k<CountOfPoints;k++)
+				Functions[k] = PointFunctions[k*CountOfPointMasks+i];
+			rw_mesh_vtk_add_function_points(VTK,CountOfPoints,Functions,name);
+		}
+		free(Functions);
+	}
+
+	i = write_format_vtk_struct(VTK,filename,flags);
+	rw_mesh_vtk_struct_free(VTK);
+	ffree(VTK);
+
+	return i;
+}
+
 /*
 int str_divide( char* input, const char* separator, char* before, char* after);
 int str_trim(char* s);
@@ -991,7 +1854,7 @@ int char_is_space(char c);
 int vtk_read_line (FILE * STREAM, char *line);
 
 
-int str_divide( char* input, const char* separator, char* before, char* after)
+int str_divide( char* input, const char* separator, char* b2efore, char* after)
 {
 	char* s;
 	int len, lens, pos;
@@ -1059,9 +1922,9 @@ int vtk_read_line (FILE * STREAM, char *line)
 
   i = strlen(line);
   return i;
-}
+}*/
 
-int write_format_vtk(int nv, REAL* v, int *mskv, int dim,
+/*int write_format_vtk(int nv, REAL* v, int *mskv, int dim,
 					 int ncells, int* cells, int* cell_sizes,
 					 int* cell_types, int *cell_mask, char filename[256])
 {
@@ -1157,6 +2020,7 @@ int write_format_vtk(int nv, REAL* v, int *mskv, int dim,
 	return (0);
 }
 
+/*
 int write_format_vtk_points_function(int nv, REAL* v, int *mskv,REAL*fv, int dim,
 					 int ncells, int* cells, int* cell_sizes,
 					 int* cell_types, int *cell_mask, char filename[256])

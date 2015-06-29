@@ -17,15 +17,29 @@ class VtkClass{
 
 public:
 
-	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*VTK;
+	struct RW_MESH_VTK_STRUCT*VTK;
 
-	VtkClass(){this->VTK=NULL;this->init();}
+	struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*	StructuredPoints;
+	struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*		StructuredGrid;
+	struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*		RectilinerGrid;
+	struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*		PolygonalData;
+	struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*	UnstructuredGrid;
+
+	VtkClass(){
+		this->VTK=NULL;
+		this->StructuredPoints	= NULL;
+		this->StructuredGrid		= NULL;
+		this->RectilinerGrid		= NULL;
+		this->PolygonalData		= NULL;
+		this->UnstructuredGrid	= NULL;
+		this->init();
+	}
 
 	~VtkClass(){this->clean();}
 
 	void init(){
 
-		this->VTK = (struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT));
+		this->VTK = (struct RW_MESH_VTK_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_STRUCT));
 		rw_mesh_vtk_struct_init(this->VTK);
 
 	}
@@ -36,10 +50,23 @@ public:
 
 	int read_vtk(char*filename){
 		int rn;
-		rn = read_format_vtk_unstructured_in_struct(this->VTK,filename,0);
+		rn = read_format_vtk_struct(this->VTK,filename,0);
 		if(rn){
 			rw_mesh_print_error();
 		}
+		switch(this->VTK->type){
+		case RW_MESH_VTK_TYPE_STRUCTURED_POINTS:
+			this->StructuredPoints = (struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*)this->VTK->Grid;break;
+		case RW_MESH_VTK_TYPE_STRUCTURED_GRID:
+			this->StructuredGrid = (struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*)this->VTK->Grid;break;
+		case RW_MESH_VTK_TYPE_RECTILINEAR_GRID:
+			this->RectilinerGrid = (struct RW_MESH_VTK_RECTILINER_GRID_STRUCT*)this->VTK->Grid;break;
+		case RW_MESH_VTK_TYPE_POLYGONAL_DATA:
+			this->PolygonalData = (struct RW_MESH_VTK_POLYGONAL_DATA_STRUCT*)this->VTK->Grid;break;
+		case RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID:
+			this->UnstructuredGrid = (struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*)this->VTK->Grid;break;
+		}
+
 		return rn;
 	}
 
@@ -62,6 +89,7 @@ public:
 				this->FacesColor,
 				filename
 				);*/
+		return 0;
 	}
 
 };
@@ -72,10 +100,10 @@ public:
 
 #define FILES_DIRECTORY WORK_DIRECTORY "files/vtk/"
 
-#define __check_point(p,k,v) 	EXPECT_NEAR(v,D.VTK->Points[p*3+k],1.e-6);
-#define __check_cell(c,k,v) 	EXPECT_EQ(v,D.VTK->Cells[D.VTK->CellOffset[c]+k])
-#define __check_cell_size(c,v) 	EXPECT_EQ(v,D.VTK->CellSizes[c])
-#define __check_cell_type(c,v) 	EXPECT_EQ(v,D.VTK->CellTypes[c])
+#define __ug_check_point(p,k,v) 	EXPECT_NEAR(v,D.UnstructuredGrid->Points[p*3+k],1.e-6);
+#define __ug_check_cell(c,k,v) 	EXPECT_EQ(v,D.UnstructuredGrid->Cells[D.UnstructuredGrid->CellOffset[c]+k])
+#define __ug_check_cell_size(c,v) 	EXPECT_EQ(v,D.UnstructuredGrid->CellSizes[c])
+#define __ug_check_cell_type(c,v) 	EXPECT_EQ(v,D.UnstructuredGrid->CellTypes[c])
 
 
 TEST(Test, cube_vtk){
@@ -85,26 +113,26 @@ TEST(Test, cube_vtk){
 
 	ASSERT_EQ(0,D.read_vtk(filename));
 
-	ASSERT_EQ(8,D.VTK->CountOfPoints);
-	ASSERT_EQ(1,D.VTK->CountOfCells);
+	ASSERT_EQ(8,D.UnstructuredGrid->CountOfPoints);
+	ASSERT_EQ(1,D.UnstructuredGrid->CountOfCells);
 
 	ASSERT_EQ(0,D.VTK->CountOfPointsData);
 	ASSERT_EQ(0,D.VTK->CountOfCellsData);
 	ASSERT_EQ(0,D.VTK->CountOfData);
 
-	__check_point(0,0,-1.0);
-	__check_point(1,1,-1.0);
-	__check_point(2,2,-1.0);
-	__check_point(7,1, 1.0);
-	__check_point(7,2, 1.0);
+	__ug_check_point(0,0,-1.0);
+	__ug_check_point(1,1,-1.0);
+	__ug_check_point(2,2,-1.0);
+	__ug_check_point(7,1, 1.0);
+	__ug_check_point(7,2, 1.0);
 
-	__check_cell( 0, 0, 0);
-	__check_cell( 0, 3, 3);
-	__check_cell( 0, 6, 6);
-	__check_cell( 0, 7, 7);
+	__ug_check_cell( 0, 0, 0);
+	__ug_check_cell( 0, 3, 3);
+	__ug_check_cell( 0, 6, 6);
+	__ug_check_cell( 0, 7, 7);
 
-	__check_cell_size( 0, 8);
-	__check_cell_type( 0, RW_MESH_VTK_CELL_TYPE_HEXAHEDRON);
+	__ug_check_cell_size( 0, 8);
+	__ug_check_cell_type( 0, RW_MESH_VTK_CELL_TYPE_HEXAHEDRON);
 
 }
 
@@ -116,8 +144,8 @@ TEST(Test, visit_rotor_small_ascii_vtk){
 
 	ASSERT_EQ(0,D.read_vtk(filename));
 
-	ASSERT_EQ(322494,D.VTK->CountOfPoints);
-	ASSERT_EQ(1878692,D.VTK->CountOfCells);
+	ASSERT_EQ(322494,D.UnstructuredGrid->CountOfPoints);
+	ASSERT_EQ(1878692,D.UnstructuredGrid->CountOfCells);
 
 	ASSERT_EQ(1,D.VTK->CountOfPointsData);
 	ASSERT_EQ(0,D.VTK->CountOfCellsData);

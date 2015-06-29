@@ -16,7 +16,7 @@
  * Возращает кол-во прочитанных символов (длина строки).
  * Символы \r и \n отрезаются
  */
-int read_line (FILE * STREAM, char *line){
+int rw_mesh_read_line (FILE * STREAM, char *line){
   int i;
   *line = 0;
   if (fgets (line, 256, STREAM) == NULL)
@@ -35,7 +35,7 @@ int read_line (FILE * STREAM, char *line){
  * Найти символ в наборе символов и вывести его индекс
  * или вернуть -1, если не найдено
  */
-inline int in_charset(const char c,const char*charset){
+int in_charset(const char c,const char*charset){
 	int i;
 	i=0;
 	while(i<255 && charset[i]!='\0'){
@@ -101,7 +101,7 @@ int string_trim(char*line){
  */
 int read_line_trim (FILE * STREAM, char *line){
 	int r;
-	r = read_line(STREAM,line);
+	r = rw_mesh_read_line(STREAM,line);
 	if(r<0)return r;
 	if(r==0)return r;
 	return string_trim(line);
@@ -113,7 +113,7 @@ int read_line_trim (FILE * STREAM, char *line){
 int read_line_skip_null (FILE * STREAM, char *line,int*linecounter){
 	//TODO add to tests
 	int r;
-	while((r=read_line(STREAM,line))==0)
+	while((r=rw_mesh_read_line(STREAM,line))==0)
 		if(linecounter)*linecounter = *linecounter+1;
 	if(r>=0)if(linecounter)*linecounter = *linecounter+1;
 	return r;

@@ -16,7 +16,9 @@
 #define NULL 0
 #endif
 
-typedef double REAL;
+#ifndef REAL
+#define REAL double
+#endif
 
 typedef REAL REAL2[2];
 typedef REAL REAL3[3];
