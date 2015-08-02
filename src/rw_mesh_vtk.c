@@ -1627,7 +1627,7 @@ struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified(int CountO
 	UnstructuredGrid = (struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_UNSTRUCTURED_GRID_STRUCT));
 	rw_mesh_vtk_unstructured_grid_struct_init(UnstructuredGrid);
 
-	VTK->type = RW_MESH_VTK_TYPE_STRUCTURED_GRID;
+	VTK->type = RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID;
 	VTK->Grid = UnstructuredGrid;
 
 	UnstructuredGrid->CountOfPoints = CountOfPoints;
@@ -1751,7 +1751,7 @@ int write_format_vtk_structured_simplified(
 		for(i=0;i<CountOfCellMasks;i++){
 			sprintf(name,"cells_mask_%d",i+1);
 			for(k=0;k<CountOfCells;k++)
-				Mask[k] = PointMasks[k*CountOfCellMasks+i];
+				Mask[k] = CellMasks[k*CountOfCellMasks+i];
 			rw_mesh_vtk_add_mask_cells(VTK,CountOfCells,Mask,name);
 		}
 		ffree(Mask);
@@ -2157,16 +2157,16 @@ int read_format_vtk(int *out_nv, REAL3** out_v, int **out_mskv,
 		log_write( "Error reading file: can't open vtk-file \n");
 		return (-1);
 	}
-	      
+
 	strcpy (word, " ");
-	      
+
 	sbaglio = vtk_read_line (LUN, word);
 	if (sbaglio == -1)
-	{		 
+	{
 		log_write( "Error reading file: vtk-file is empty \n");
 		return (-1);
 	}
-    
+
 	while (sbaglio != -1)
 	{
       if (strstr(word, "POintS") != NULL)
@@ -2182,7 +2182,7 @@ int read_format_vtk(int *out_nv, REAL3** out_v, int **out_mskv,
 				fscanf(LUN, "%lf", &(v[i]));
 
 			//log_write(stderr, "download ended \n");
-	  }  
+	  }
 	  else if (strstr (word, "CELLS") != NULL)
 	  {
 		  //log_write( "download cells \n");
@@ -2211,7 +2211,7 @@ int read_format_vtk(int *out_nv, REAL3** out_v, int **out_mskv,
 		  	cell_types = (int*) malloc(ncells * sizeof(int));
 			for (i = 0; i < ncells; i++)
 				fscanf(LUN, "%d", &(cell_types[i]));
-		
+
 			//log_write(stderr, "download ended \n");
 	  }
 	  else if (strstr (word, "CELL_DATA") != NULL)
@@ -2259,7 +2259,7 @@ int read_format_vtk(int *out_nv, REAL3** out_v, int **out_mskv,
 					cell_types[i] = 5;
 				else if (cell_sizes[i + 1] == 4)
 					cell_types[i] = 9;
-				else 
+				else
 					cell_types[i] = 7;
 
 				cell_sizes[i + 1] = cell_sizes[i] + cell_sizes[i + 1];
