@@ -1290,9 +1290,91 @@ int _get_data_type_name(int DataType,char*string){
 	return 0;
 }
 
-int _write_array_data_type(FILE*fd,void*Data,int Count,int DataType){
-#define _write(format,what) for(i=j=0;i<Count;i++) fprintf(fd,format "%c",(what),((i+1)%9 && ((i+1)<Count))?' ':'\n');
-	int i,j;
+void le2be16 (unsigned char *d) {
+    unsigned char c;
+    c = d[0];d[0] = d[1];d[1] = c;
+}
+
+void le2be32 (unsigned char *d) {
+    unsigned char c;
+    c = d[0];d[0] = d[3];d[3] = c;
+    c = d[1];d[1] = d[2];d[2] = c;
+}
+
+void le2be64 (unsigned char *d) {
+    unsigned char c;
+    c = d[0];d[0] = d[7];d[7] = c;
+    c = d[1];d[1] = d[6];d[6] = c;
+    c = d[2];d[2] = d[5];d[5] = c;
+    c = d[3];d[3] = d[4];d[4] = c;
+}
+void le2be (unsigned char *d,size_t size) {
+	if(size==2){
+		le2be16(d);
+	}else if(size==4){
+		le2be32(d);
+	} if(size==8){
+		le2be64(d);
+	}
+}
+
+int _write_array_data_type_binary(FILE*fd,void*Data,int Count,int DataType){
+#define _write(type) data = malloc(sizeof(type));for(i=0;i<Count;i++){*((type*)data) = ((type*)Data)[i];le2be(data,sizeof(type));fwrite(data,sizeof(type),1,fd);}free(data);
+	int i;
+	char c;
+	void*data;
+
+	switch(DataType){
+	case RW_MESH_VTK_TYPE_BIT:
+		for(i=0;i<Count;i++){
+			c = ((char*)Data)[i]?'1':'0';
+			fwrite(&c,sizeof(char),1,fd);
+		}
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_CHAR:
+		_write(char);
+		break;
+	case RW_MESH_VTK_TYPE_CHAR:
+		_write(char);
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_SHORT:
+		_write(unsigned short);
+		break;
+	case RW_MESH_VTK_TYPE_SHORT:
+		_write(short);
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_INT:
+		_write(unsigned int);
+		break;
+	case RW_MESH_VTK_TYPE_INT:
+		_write(int);
+		break;
+	case RW_MESH_VTK_TYPE_UNSIGNED_LONG:
+		_write(unsigned long);
+		break;
+	case RW_MESH_VTK_TYPE_LONG:
+		_write(long);
+		break;
+	case RW_MESH_VTK_TYPE_FLOAT:
+		_write(float);
+		break;
+	case RW_MESH_VTK_TYPE_DOUBLE:
+		_write(double);
+		break;
+	default:
+		fwrite(Data,sizeof(int),Count,fd);
+		break;
+	}
+#undef _write
+	c = '\n';
+	fwrite(&c,sizeof(char),1,fd);
+
+	return 0;
+}
+
+int _write_array_data_type(FILE*fd,void*Data,int Count,int DataType,int numsOnRow){
+#define _write(format,what) for(i=0;i<Count;i++) fprintf(fd,format "%c",(what),((i+1)%numsOnRow && ((i+1)<Count))?' ':'\n');
+	int i;
 	switch(DataType){
 	case RW_MESH_VTK_TYPE_BIT:
 		_write("%c",((char*)Data)[i]?'1':'0');
@@ -1331,12 +1413,10 @@ int _write_array_data_type(FILE*fd,void*Data,int Count,int DataType){
 		_write("%d",((int*)Data)[i]);
 		break;
 	}
-
-
-#undef ___write
+#undef _write
 	return 0;
 }
-int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data){
+int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data,int isBinary){
 	int i;
 	char string[256];
 	struct RW_MESH_VTK_DATA_SCALARS_STRUCT*Scalar;
@@ -1375,7 +1455,11 @@ int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data){
 			//fprintf(fd,"LOOKUP_TABLE default\n");
 		}
 
-		_write_array_data_type(fd,Scalar->values,Scalar->numComp*Data->Counts,Scalar->dataType);
+		if(isBinary){
+			_write_array_data_type_binary(fd,Scalar->values,Scalar->numComp*Data->Counts,Scalar->dataType);
+		}else{
+			_write_array_data_type(fd,Scalar->values,Scalar->numComp*Data->Counts,Scalar->dataType,RW_MESH_VTK_DEFAULT_NUMS_ON_ROW);
+		}
 
 		break;
 	case RW_MESH_VTK_DATASET_TYPE_COLOR_SCALARS:
@@ -1429,7 +1513,11 @@ int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data){
 			_get_data_type_name(Field->Arrays[i].dataType,string);
 			fprintf(fd," %s\n",string);
 
-			_write_array_data_type(fd,Field->Arrays[i].values,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType);
+			if(isBinary){
+				_write_array_data_type_binary(fd,Field->Arrays[i].values,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType);
+			}else{
+				_write_array_data_type(fd,Field->Arrays[i].values,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType,RW_MESH_VTK_DEFAULT_NUMS_ON_ROW);
+			}
 
 		}
 
@@ -1455,6 +1543,8 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 	int data_type,data_size;
 	int CountOfPoints;
 	int CountOfCells;
+	int isBinary;
+	int*cp;
 
 	struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*	StructuredPoints;
 	struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*		StructuredGrid;
@@ -1477,9 +1567,16 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 		return 1;
 	}
 
+	isBinary = 0;
+	if(flags&RW_MESH_VTK_BINARY)isBinary = 1;
+
 	fprintf(fd,"# vtk DataFile Version 3.0\n");
 	fprintf(fd,"File generated be rw_mesh\n");
-	fprintf(fd,"ASCII\n");
+	if(isBinary){
+		fprintf(fd,"BINARY\n");
+	}else{
+		fprintf(fd,"ASCII\n");
+	}
 
 	if(VTK->type == RW_MESH_VTK_TYPE_STRUCTURED_POINTS){
 		rw_mesh_set_error(0,"Structured point isn't supported in current version of writer");
@@ -1499,11 +1596,24 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 		}
 		fprintf(fd,"\n");
 
-		for(i=0;i<CountOfPoints;i++){
-			if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
-				fprintf(fd,"%f %f %f\n",StructuredGrid->Points[i*3],StructuredGrid->Points[i*3+1],StructuredGrid->Points[i*3+2]);
+//		for(i=0;i<CountOfPoints;i++){
+//			if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+//				fprintf(fd,"%f %f %f\n",StructuredGrid->Points[i*3],StructuredGrid->Points[i*3+1],StructuredGrid->Points[i*3+2]);
+//			}else{
+//				fprintf(fd,"%lf %lf %lf\n",StructuredGrid->Points[i*3],StructuredGrid->Points[i*3+1],StructuredGrid->Points[i*3+2]);
+//			}
+//		}
+		if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+			if(isBinary){
+				_write_array_data_type_binary(fd,StructuredGrid->Points,CountOfPoints*3,RW_MESH_VTK_TYPE_FLOAT);
 			}else{
-				fprintf(fd,"%lf %lf %lf\n",StructuredGrid->Points[i*3],StructuredGrid->Points[i*3+1],StructuredGrid->Points[i*3+2]);
+				_write_array_data_type(fd,StructuredGrid->Points,CountOfPoints*3,RW_MESH_VTK_TYPE_FLOAT,3);
+			}
+		}else{
+			if(isBinary){
+				_write_array_data_type_binary(fd,StructuredGrid->Points,CountOfPoints*3,RW_MESH_VTK_TYPE_DOUBLE);
+			}else{
+				_write_array_data_type(fd,StructuredGrid->Points,CountOfPoints*3,RW_MESH_VTK_TYPE_DOUBLE,3);
 			}
 		}
 
@@ -1526,25 +1636,55 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 		}
 		fprintf(fd,"\n");
 
-		for(i=0;i<UnstructuredGrid->CountOfPoints;i++){
-			if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
-				fprintf(fd,"%f %f %f\n",UnstructuredGrid->Points[i*3],UnstructuredGrid->Points[i*3+1],UnstructuredGrid->Points[i*3+2]);
+//		for(i=0;i<UnstructuredGrid->CountOfPoints;i++){
+//			if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+//				fprintf(fd,"%f %f %f\n",UnstructuredGrid->Points[i*3],UnstructuredGrid->Points[i*3+1],UnstructuredGrid->Points[i*3+2]);
+//			}else{
+//				fprintf(fd,"%lf %lf %lf\n",UnstructuredGrid->Points[i*3],UnstructuredGrid->Points[i*3+1],UnstructuredGrid->Points[i*3+2]);
+//			}
+//		}
+		if(flags&RW_MESH_VTK_USE_POINTS_FLOAT){
+			if(isBinary){
+				_write_array_data_type_binary(fd,UnstructuredGrid->Points,UnstructuredGrid->CountOfPoints*3,RW_MESH_VTK_TYPE_FLOAT);
 			}else{
-				fprintf(fd,"%lf %lf %lf\n",UnstructuredGrid->Points[i*3],UnstructuredGrid->Points[i*3+1],UnstructuredGrid->Points[i*3+2]);
+				_write_array_data_type(fd,UnstructuredGrid->Points,UnstructuredGrid->CountOfPoints*3,RW_MESH_VTK_TYPE_FLOAT,3);
+			}
+		}else{
+			if(isBinary){
+				_write_array_data_type_binary(fd,UnstructuredGrid->Points,UnstructuredGrid->CountOfPoints*3,RW_MESH_VTK_TYPE_DOUBLE);
+			}else{
+				_write_array_data_type(fd,UnstructuredGrid->Points,UnstructuredGrid->CountOfPoints*3,RW_MESH_VTK_TYPE_DOUBLE,3);
 			}
 		}
 
 		fprintf(fd,"CELLS %d %d\n",UnstructuredGrid->CountOfCells,UnstructuredGrid->CountOfCells+UnstructuredGrid->CellOffset[UnstructuredGrid->CountOfCells]);
-		for(i=0;i<UnstructuredGrid->CountOfCells;i++){
-			fprintf(fd,"%d",UnstructuredGrid->CellSizes[i]);
-			for(j=0;j<UnstructuredGrid->CellSizes[i];j++)
-				fprintf(fd," %d",UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+j]);
-			fprintf(fd,"\n");
+		if(isBinary){
+			for(i=j=0;i<UnstructuredGrid->CountOfCells;i++)
+				j+=UnstructuredGrid->CellSizes[i];
+			cp = (int*)calloc(UnstructuredGrid->CountOfCells+j,sizeof(int));
+			for(i=j=0;i<UnstructuredGrid->CountOfCells;i++){
+				cp[j] = UnstructuredGrid->CellSizes[i];
+				memcpy(cp+j+1,UnstructuredGrid->Cells+UnstructuredGrid->CellOffset[i],UnstructuredGrid->CellSizes[i]*sizeof(int));
+				j+=1+UnstructuredGrid->CellSizes[i];
+			}
+			_write_array_data_type_binary(fd,cp,j,RW_MESH_VTK_TYPE_INT);
+			free(cp);
+		}else{
+			for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+				fprintf(fd,"%d",UnstructuredGrid->CellSizes[i]);
+				for(j=0;j<UnstructuredGrid->CellSizes[i];j++)
+					fprintf(fd," %d",UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+j]);
+				fprintf(fd,"\n");
+			}
 		}
 
 		fprintf(fd,"CELL_TYPES %d\n",UnstructuredGrid->CountOfCells);
-		for(i=0;i<UnstructuredGrid->CountOfCells;i++){
-			fprintf(fd,"%d%c",UnstructuredGrid->CellTypes[i],((i+1)%20&&((i+1)<UnstructuredGrid->CountOfCells))?' ':'\n');
+		if(isBinary){
+			_write_array_data_type_binary(fd,UnstructuredGrid->CellTypes,UnstructuredGrid->CountOfCells,RW_MESH_VTK_TYPE_INT);
+		}else{
+			for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+				fprintf(fd,"%d%c",UnstructuredGrid->CellTypes[i],((i+1)%20&&((i+1)<UnstructuredGrid->CountOfCells))?' ':'\n');
+			}
 		}
 
 		CountOfPoints = UnstructuredGrid->CountOfPoints;
@@ -1554,13 +1694,13 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 	if(VTK->CountOfPointsData){
 		fprintf(fd,"POINT_DATA %d\n",CountOfPoints);
 		for(i=0;i<VTK->CountOfPointsData;i++)
-			_write_data(fd,VTK->PointsData+i);
+			_write_data(fd,VTK->PointsData+i,isBinary);
 	}
 
 	if(VTK->CountOfCellsData){
 		fprintf(fd,"CELL_DATA %d\n",CountOfCells);
 		for(i=0;i<VTK->CountOfCellsData;i++)
-			_write_data(fd,VTK->CellsData+i);
+			_write_data(fd,VTK->CellsData+i,isBinary);
 	}
 
 	fclose(fd);
@@ -1846,6 +1986,7 @@ int write_format_vtk_unstructured_simplified(
 
 	return i;
 }
+
 
 /*
 int str_divide( char* input, const char* separator, char* before, char* after);

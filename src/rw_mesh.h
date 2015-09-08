@@ -17,4 +17,6 @@
 
 #include "rw_mesh_vtk.h"
 
+#include "rw_mesh_plot3d.h"
+
 #endif /* RW_MESH_H_ */

@@ -56,8 +56,11 @@
 #define RW_MESH_VTK_DATASET_TYPE_TENSORS				7 // "TENSORS"
 #define RW_MESH_VTK_DATASET_TYPE_FIELD					8 // "FIELD"
 
-#define RW_MESH_VTK_SKIP_UNKNOWN	1
+#define RW_MESH_VTK_SKIP_UNKNOWN		1
 #define RW_MESH_VTK_USE_POINTS_FLOAT	2
+#define RW_MESH_VTK_BINARY				4
+
+#define RW_MESH_VTK_DEFAULT_NUMS_ON_ROW	10
 
 struct RW_MESH_VTK_DATA_SCALARS_STRUCT{
 	int dataType;
@@ -245,6 +248,8 @@ int write_format_vtk_unstructured_simplified(
 	int CountOfCellFunctions, REAL*CellFunctions,
 
 	char*filename,int flags);
+
+void vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values);
 
 /*int write_format_vtk(int nv, REAL* v, int* mskv, int dim,
 					 int ncells, int* cells, int* cell_sizes,
