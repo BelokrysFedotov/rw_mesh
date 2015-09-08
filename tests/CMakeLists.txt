@@ -37,3 +37,5 @@ target_link_libraries (read_vtk_file ${LIBS})
 add_executable (write_vtk_structed_file vtk/write_vtk_structed_file.c)
 target_link_libraries (write_vtk_structed_file ${LIBS})
 
+add_executable (read_plot3d_file plot3d/read_plot3d_file.c)
+target_link_libraries (read_plot3d_file ${LIBS})
