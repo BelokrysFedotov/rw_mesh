@@ -1,6 +1,6 @@
 rw_mesh
 =======
-[![Build Status](https://travis-ci.org/[GITHUB_USERNAME]/[PROJECT_NAME].png)](https://travis-ci.org/[GITHUB_USERNAME]/[PROJECT_NAME])
+[![Build Status](https://travis-ci.org/BelokrysFedotov/rw_mesh.svg?branch=master)](https://travis-ci.org/BelokrysFedotov/rw_mesh)
 
 Lib read/write 3d mesh formats
 
