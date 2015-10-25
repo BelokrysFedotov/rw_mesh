@@ -4,6 +4,9 @@ compiler:
 env:	
   - CTEST_MODEL=Experimental
 #  - CTEST_MODEL=Nightly
+branches:
+  only:
+    - master
 before_script:
   - mkdir build
   - cd build
