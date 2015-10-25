@@ -3,7 +3,7 @@ compiler:
   - gcc
 env:	
   - CTEST_MODEL=Experimental
-  - CTEST_MODEL=Nightly
+#  - CTEST_MODEL=Nightly
 before_script:
   - mkdir build
   - cd build
