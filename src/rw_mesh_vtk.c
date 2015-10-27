@@ -1421,6 +1421,7 @@ int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data,int isBinary){
 	char string[256];
 	struct RW_MESH_VTK_DATA_SCALARS_STRUCT*Scalar;
 	struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field;
+	struct RW_MESH_VTK_DATA_VECTORS_STRUCT*Vector;
 
 	switch(Data->DataType){
 	case RW_MESH_VTK_DATASET_TYPE_NONE:
@@ -1470,6 +1471,29 @@ int _write_data(FILE*fd,struct RW_MESH_VTK_DATASET_STRUCT*Data,int isBinary){
 		break;
 	case RW_MESH_VTK_DATASET_TYPE_VECTORS:
 		//fprintf(fd,"VECTORS");
+
+		fprintf(fd,"VECTORS");
+
+		Vector = (struct RW_MESH_VTK_DATA_VECTORS_STRUCT*)Data->Data;
+
+		//dataName
+		if(Data->DataName){
+			fprintf(fd," %s",Data->DataName);
+		}else{
+			// если нет имени, пишем вместо имени адресс
+			fprintf(fd," %p",Data);
+		}
+
+		//dataType
+		_get_data_type_name(Vector->dataType,string);
+		fprintf(fd," %s\n",string);
+
+		if(isBinary){
+			_write_array_data_type_binary(fd,Vector->values,Data->Counts*3,Vector->dataType);
+		}else{
+			_write_array_data_type(fd,Vector->values,Data->Counts*3,Vector->dataType,RW_MESH_VTK_DEFAULT_NUMS_ON_ROW);
+		}
+
 		break;
 	case RW_MESH_VTK_DATASET_TYPE_NORMALS:
 		//fprintf(fd,"NORMALS");
@@ -1690,6 +1714,10 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 		CountOfPoints = UnstructuredGrid->CountOfPoints;
 		CountOfCells = UnstructuredGrid->CountOfCells;
 	}
+	if(VTK->CountOfData){
+		for(i=0;i<VTK->CountOfData;i++)
+			_write_data(fd,VTK->Data+i,isBinary);
+	}
 
 	if(VTK->CountOfPointsData){
 		fprintf(fd,"POINT_DATA %d\n",CountOfPoints);
@@ -1706,6 +1734,7 @@ int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int
 	fclose(fd);
 	return 0;
 }
+
 
 void vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values){
 	int i,j;
@@ -1730,6 +1759,42 @@ void vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*na
 
 	Array->values = calloc(Array->numComponents*Array->numTuples,_vtk_type_size(type));
 	memcpy(Array->values,Values,Array->numComponents*Array->numTuples*_vtk_type_size(type));
+
+}
+
+void vtk_data_field_add_array_mask(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values,int*mask){
+	int i,j;
+	struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT* Array;
+
+	if(!mask)return vtk_data_field_add_array(Field,name,Count,numComp,type,Values);
+
+	if(Field->numArrays == 0){
+		Field->numArrays = 1;
+		Field->Arrays = (struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT));
+		Array = Field->Arrays+0;
+	}else{
+		Field->numArrays++;
+		Field->Arrays = (struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT*)realloc(Field->Arrays,Field->numArrays*sizeof(struct RW_MESH_VTK_DATA_FIELD_ARRAY_STRUCT));
+		Array = Field->Arrays+Field->numArrays-1;
+	}
+
+	Array->dataType = type;//RW_MESH_VTK_TYPE_DOUBLE;
+	Array->name = (char*)calloc(strlen(name)+1,sizeof(char));
+	strcpy(Array->name,name);
+	Array->numComponents = numComp;
+
+	Array->numTuples = 0;
+	for(i=0;i<Count;i++)
+		if(mask[i])
+			Array->numTuples++;
+
+	Array->values = calloc(Array->numComponents*Array->numTuples,_vtk_type_size(type));
+	//memcpy(Array->values,Values,Array->numComponents*Array->numTuples*_vtk_type_size(type));
+	for(i=j=0;i<Count;i++)
+		if(mask[i]){
+			memcpy(Array->values+j*Array->numComponents*_vtk_type_size(type),Values+i*Array->numComponents*_vtk_type_size(type),Array->numComponents*_vtk_type_size(type));
+			j++;
+		}
 
 
 }
@@ -1841,6 +1906,86 @@ int rw_mesh_vtk_add_function_points(struct RW_MESH_VTK_STRUCT*VTK,int Count,REAL
 int rw_mesh_vtk_add_function_cells(struct RW_MESH_VTK_STRUCT*VTK,int Count,REAL*Function,char*name){
 	return rw_mesh_vtk_add_function(VTK,RW_MESH_VTK_DATA_OBJECT_CELLS,Count,Function,name);
 }
+
+int rw_mesh_vtk_add_vectors(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,char*name){
+	struct RW_MESH_VTK_DATASET_STRUCT*Data;
+	struct RW_MESH_VTK_DATA_VECTORS_STRUCT*Vectors;
+
+	Data = _vtk_add_data(VTK,data_object);
+
+	Data->Counts = Count;
+	if(name){
+		Data->DataName = (char*)calloc(strlen(name)+1,sizeof(char));
+		strcpy(Data->DataName,name);
+	}else{
+		Data->DataName = NULL;
+	}
+
+	Data->DataType = RW_MESH_VTK_DATASET_TYPE_VECTORS;
+	Vectors = (struct RW_MESH_VTK_DATA_VECTORS_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_DATA_VECTORS_STRUCT));
+	Data->Data = Vectors;
+
+	Vectors->dataType = data_type;
+
+	Vectors->values = calloc(Count*3,_vtk_type_size(data_type));
+	memcpy(Vectors->values,values,Count*3*_vtk_type_size(data_type));
+
+	return 0;
+}
+
+int rw_mesh_vtk_add_vectors_mask(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,int*mask,char*name){
+	int i,j;
+	struct RW_MESH_VTK_DATASET_STRUCT*Data;
+	struct RW_MESH_VTK_DATA_VECTORS_STRUCT*Vectors;
+
+	if(!mask)return rw_mesh_vtk_add_vectors(VTK,data_object,Count,data_type,values,name);
+
+	Data = _vtk_add_data(VTK,data_object);
+
+	Data->Counts = 0;
+	for(i=0;i<Count;i++)
+		if(mask[i])
+			Data->Counts++;
+
+	if(name){
+		Data->DataName = (char*)calloc(strlen(name)+1,sizeof(char));
+		strcpy(Data->DataName,name);
+	}else{
+		Data->DataName = NULL;
+	}
+
+	Data->DataType = RW_MESH_VTK_DATASET_TYPE_VECTORS;
+	Vectors = (struct RW_MESH_VTK_DATA_VECTORS_STRUCT*)calloc(1,sizeof(struct RW_MESH_VTK_DATA_VECTORS_STRUCT));
+	Data->Data = Vectors;
+
+	Vectors->dataType = data_type;
+
+	Vectors->values = calloc(Data->Counts*3,_vtk_type_size(data_type));
+
+	for(i=j=0;i<Count;i++)
+		if(mask[i]){
+			memcpy(Vectors->values+j*3*_vtk_type_size(data_type),values+i*3*_vtk_type_size(data_type),3*_vtk_type_size(data_type));
+			j++;
+		}
+
+	return 0;
+}
+
+
+struct RW_MESH_VTK_DATA_FIELD_STRUCT* vtk_data_field_add_field(struct RW_MESH_VTK_STRUCT*VTK,int data_object,char*name){
+
+	struct RW_MESH_VTK_DATASET_STRUCT*Data;
+	Data = _vtk_add_data(VTK,data_object);
+
+	rw_mesh_vtk_dataset_struct_init(Data);
+	Data->Counts = 1;
+	Data->DataName = (char*)calloc(strlen(name)+1,sizeof(char));
+	strcpy(Data->DataName,name);
+	Data->DataType = RW_MESH_VTK_DATASET_TYPE_FIELD;
+	Data->Data = (void*)calloc(1,sizeof(struct RW_MESH_VTK_DATA_FIELD_STRUCT));
+	return (struct RW_MESH_VTK_DATA_FIELD_STRUCT*) Data->Data;
+}
+
 
 int write_format_vtk_structured_simplified(
 		int Nx,int Ny,int Nz, REAL3*Points,

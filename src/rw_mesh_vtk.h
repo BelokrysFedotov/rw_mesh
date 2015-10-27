@@ -12,6 +12,9 @@
 
 #define EXTENTION_VTK "*\.vtk"
 
+/**
+ * Типы сеток
+ */
 #define RW_MESH_VTK_TYPE_NONE				0
 #define RW_MESH_VTK_TYPE_STRUCTURED_POINTS	1	// "STRUCTURED_POINTS"
 #define RW_MESH_VTK_TYPE_STRUCTURED_GRID	2	// "STRUCTURED_GRID"
@@ -20,10 +23,16 @@
 #define RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID	5	// "UNSTRUCTURED_GRID"
 #define RW_MESH_VTK_TYPE_FIELD				6	// "FIELD"
 
+/**
+ * Типы объектов для привязки объектов
+ */
 #define RW_MESH_VTK_DATA_OBJECT_NONE		0
 #define RW_MESH_VTK_DATA_OBJECT_POINTS		1
 #define RW_MESH_VTK_DATA_OBJECT_CELLS		2
 
+/**
+ * Типы ячеек
+ */
 #define RW_MESH_VTK_CELL_TYPE_NONE			 0
 #define RW_MESH_VTK_CELL_TYPE_TRIANGLE		 5
 #define RW_MESH_VTK_CELL_TYPE_POLYGON		 7
@@ -34,6 +43,9 @@
 #define RW_MESH_VTK_CELL_TYPE_WEDGE			13
 #define RW_MESH_VTK_CELL_TYPE_PYRAMID		14
 
+/**
+ * Типы элементов данных
+ */
 #define RW_MESH_VTK_TYPE_BIT			 1	//bit
 #define RW_MESH_VTK_TYPE_UNSIGNED_CHAR	 2	//unsigned_char
 #define RW_MESH_VTK_TYPE_CHAR			 3	//char
@@ -46,6 +58,9 @@
 #define RW_MESH_VTK_TYPE_FLOAT			10	//float
 #define RW_MESH_VTK_TYPE_DOUBLE			11	//double
 
+/**
+ * Типы структур данных
+ */
 #define RW_MESH_VTK_DATASET_TYPE_NONE					0
 #define RW_MESH_VTK_DATASET_TYPE_SCALARS				1 // "SCALARS"
 #define RW_MESH_VTK_DATASET_TYPE_COLOR_SCALARS			2 // "COLOR_SCALARS"
@@ -56,10 +71,24 @@
 #define RW_MESH_VTK_DATASET_TYPE_TENSORS				7 // "TENSORS"
 #define RW_MESH_VTK_DATASET_TYPE_FIELD					8 // "FIELD"
 
-#define RW_MESH_VTK_SKIP_UNKNOWN		1
-#define RW_MESH_VTK_USE_POINTS_FLOAT	2
-#define RW_MESH_VTK_BINARY				4
+// Пропускать незнакомые типы и данные, если возможно, и не выводить ошибку при этом
+#define RW_MESH_VTK_SKIP_UNKNOWN		0x0001
+// Записывать точки как float, а нет double
+#define RW_MESH_VTK_USE_POINTS_FLOAT	0x0002
+// Записать сетку в бинарном формате. Чтение не поддерживается
+#define RW_MESH_VTK_BINARY				0x0004
+// В функциях simplified массивы считать последовательными
+#define RW_MESH_VTK_SIMPLIFY_IN_SERIES	0x0008
+// Считать все данные в точках как маска
+#define RW_MESH_VTK_SIMPLIFY_POINTS_FORCE_MASK	0x0010
+// Считать все данные в точках как функция
+#define RW_MESH_VTK_SIMPLIFY_POINTS_FORCE_FUNCTION 0x0020
+// Считать все данные в ячейках как маска
+#define RW_MESH_VTK_SIMPLIFY_CELLS_FORCE_MASK	0x0040
+// Считать все данные в ячейках как функция
+#define RW_MESH_VTK_SIMPLIFY_CELLS_FORCE_FUNCTION 0x0080
 
+// Кол-во чисел в строке при записи ASCII
 #define RW_MESH_VTK_DEFAULT_NUMS_ON_ROW	10
 
 struct RW_MESH_VTK_DATA_SCALARS_STRUCT{
@@ -197,23 +226,6 @@ int rw_mesh_vtk_dataset_struct_init(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 int rw_mesh_vtk_dataset_struct_clean(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 int rw_mesh_vtk_dataset_struct_free(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 
-void rw_mesh_vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values);
-
-int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int flags);
-
-int read_format_vtk_unstructured_simplified(
-		int*CountOfPoints, REAL3**Points,
-		int*CountOfPointMasks, int**PointMasks,
-		int*CountOfPointFunctions, REAL**PointFunctions,
-
-		int*CountOfCells,int**Cells,int**CellSizes,int**CellTypes,int**CellOffset,
-		int*CountOfCellMasks, int**CellMasks,
-		int*CountOfCellFunctions, REAL**CellFunctions,
-
-		char*filename,int flags);
-
-int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int flags);
-
 struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_structured_simplified(int Nx,int Ny,int Nz, REAL3*Points);
 struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified(int CountOfPoints, REAL3*Points,int CountOfCells,int*Cells,int*CellSizes,int*CellTypes,int*CellOffset);
 
@@ -227,29 +239,47 @@ int rw_mesh_vtk_add_function(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int C
 int rw_mesh_vtk_add_function_points(struct RW_MESH_VTK_STRUCT*VTK,int Count,REAL*Function,char*name);
 int rw_mesh_vtk_add_function_cells(struct RW_MESH_VTK_STRUCT*VTK,int Count,REAL*Function,char*name);
 
+int rw_mesh_vtk_add_vectors(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,char*name);
+int rw_mesh_vtk_add_vectors_mask(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,int*mask,char*name);
+
+struct RW_MESH_VTK_DATA_FIELD_STRUCT* vtk_data_field_add_field(struct RW_MESH_VTK_STRUCT*VTK,int data_object,char*name);
+
+void rw_mesh_vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values);
+void vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values);
+void vtk_data_field_add_array_mask(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values,int*mask);
+
+int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int flags);
+
+//TODO флаг - маски/фунции в параллельно/перемешку или последовательно
+//TODO флаг - считать маски как фунции = считать всё как функции (точки и ячейки отдельно) - 2 флага
+//TODO флаг - считать функции как маски = считать всё как маска (точки и ячейки отдельно) - 2 флага
+int read_format_vtk_unstructured_simplified(int*CountOfPoints, REAL3**Points,
+		int*CountOfPointMasks, int**PointMasks,
+		int*CountOfPointFunctions, REAL**PointFunctions,
+		int*CountOfCells,int**Cells,int**CellSizes,int**CellTypes,int**CellOffset,
+		int*CountOfCellMasks, int**CellMasks,
+		int*CountOfCellFunctions, REAL**CellFunctions,
+		char*filename,int flags);
+
+int write_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int flags);
+
+
 int write_format_vtk_structured_simplified(
 	int Nx,int Ny,int Nz, REAL3*Points,
 	int CountOfPointMasks, int*PointMasks,
 	int CountOfPointFunctions, REAL*PointFunctions,
-
 	int CountOfCellMasks, int*CellMasks,
 	int CountOfCellFunctions, REAL*CellFunctions,
-
 	char*filename,int flags);
-
 
 int write_format_vtk_unstructured_simplified(
 	int CountOfPoints, REAL3*Points,
 	int CountOfPointMasks, int*PointMasks,
 	int CountOfPointFunctions, REAL*PointFunctions,
-
 	int CountOfCells,int*Cells,int*CellSizes,int*CellTypes,int*CellOffset,
 	int CountOfCellMasks, int*CellMasks,
 	int CountOfCellFunctions, REAL*CellFunctions,
-
 	char*filename,int flags);
-
-void vtk_data_field_add_array(struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field,char*name,int Count,int numComp,int type,void*Values);
 
 /*int write_format_vtk(int nv, REAL* v, int* mskv, int dim,
 					 int ncells, int* cells, int* cell_sizes,
