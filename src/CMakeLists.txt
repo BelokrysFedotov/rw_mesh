@@ -21,4 +21,10 @@ if ( MSVC )
 	add_definitions ( -D_CRT_SECURE_NO_WARNINGS )
 endif ( MSVC )
 
+
+
 add_library ( ${LIBRARY_NAME} ${LIBRARY_TYPE} ${LIBRARY_SOURCE_FILES} )
+
+if(CGNS_LIB)
+	target_link_libraries (${LIBRARY_NAME} cgns_static)
+endif()
