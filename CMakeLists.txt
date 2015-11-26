@@ -1,7 +1,7 @@
 cmake_minimum_required ( VERSION 2.8 )
 #project ( RW_MESH CXX )
 
-option ( CGNS_LIB "Enable cgns support" ON )
+option ( CGNS_LIB "Enable cgns support" OFF )
 option ( BUILD_TESTING "Enable/disable testing" ON )
 
 if(CGNS_LIB)
