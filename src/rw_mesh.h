@@ -19,4 +19,6 @@
 
 #include "rw_mesh_plot3d.h"
 
+#include "rw_mesh_cgns.h"
+
 #endif /* RW_MESH_H_ */

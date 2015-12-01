@@ -27,9 +27,13 @@ int write_format_cgns_structured_simplified(
 	double*x;
 	int*m;
 	int index_file,index_base,index_zone,index_coord;
-	int index_solution,index_field;
+	int index_solution,index_field,index_bc;
 	int icelldim,iphysdim;
 	cgsize_t isize[3][3];
+
+	int ilo, ihi, jlo, jhi, klo, khi;
+	cgsize_t ipnts[6];
+	double exponents[5];
 
 	char error[256];
 	char field_name[256];
@@ -68,6 +72,7 @@ int write_format_cgns_structured_simplified(
 	for(i=0;i<Np;i++) x[i] = Points[i][0];
 	cg_coord_write(index_file,index_base,index_zone,RealDouble,"CoordinateX", x,&index_coord);
 
+
 	for(i=0;i<Np;i++) x[i] = Points[i][1];
 	cg_coord_write(index_file,index_base,index_zone,RealDouble,"CoordinateY", x,&index_coord);
 
@@ -76,11 +81,27 @@ int write_format_cgns_structured_simplified(
 
 	free(x);
 
+//	cg_goto(index_file,index_base,"end");
+//	cg_dataclass_write(Dimensional);
+//	cg_units_write(Kilogram,Meter,Second,Kelvin,Degree);
+//	cg_units_write(MassUnitsNull,LengthUnitsNull,TimeUnitsNull,TemperatureUnitsNull,Radian);
+//
+//	exponents[0]=0;
+//	exponents[1]=1;
+//	exponents[2]=0;
+//	exponents[3]=0;
+//	exponents[4]=0;
+
+//	for(i=1;i<=3;i++){
+//		cg_goto(index_file,index_base,"Zone_t",1,"GridCoordinates_t",1,"DataArray_t",i,"end");
+//		cg_exponents_write(RealDouble,exponents);
+//	}
+
 	if(CountOfPointMasks || CountOfPointFunctions){
 		cg_sol_write(index_file,index_base,index_zone,"Vertex Solution", Vertex, &index_solution);
 
 		if(CountOfPointMasks)for(n=0;n<CountOfPointMasks;n++){
-			sprintf(field_name,"Mask %d",n+1);
+			sprintf(field_name,"Mask_%d",n+1);
 			m = (int*)calloc(Np,sizeof(int));
 			for(i=0;i<Np;i++) m[i] = PointMasks[i*CountOfPointMasks+n];
 			cg_field_write(index_file, index_base, index_zone, index_solution, Integer, field_name, m, &index_field);
@@ -115,6 +136,28 @@ int write_format_cgns_structured_simplified(
 			free(x);
 		}
 	}
+
+	ilo=1;	ihi=isize[0][0];
+	jlo=1;	jhi=isize[0][1];
+	klo=1;	khi=isize[0][2];
+
+	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ilo; ipnts[4] = jhi; ipnts[5] = khi;
+	cg_boco_write(index_file,index_base,index_zone,"Ilo", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
+
+	/*ipnts[0] = ihi; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = khi;
+	cg_boco_write(index_file,index_base,index_zone,"Ihi", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
+
+	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jlo; ipnts[5] = khi;
+	cg_boco_write(index_file,index_base,index_zone,"Jlo", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
+
+	ipnts[0] = ilo; ipnts[1] = jhi; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = khi;
+	cg_boco_write(index_file,index_base,index_zone,"Jhi", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
+
+	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = klo;
+	cg_boco_write(index_file,index_base,index_zone,"Klo", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
+
+	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = khi; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = khi;
+	cg_boco_write(index_file,index_base,index_zone,"Khi", BCDataTypeNull,PointRange,2,ipnts,&index_bc);*/
 
 	/* close CGNS file */
 	cg_close(index_file);
