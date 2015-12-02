@@ -58,6 +58,6 @@ add_library ( ${LIBRARY_NAME} ${LIBRARY_TYPE} ${LIBRARY_SOURCE_FILES} )
 
 if(CGNS_LIB)
 	target_link_libraries (${LIBRARY_NAME} cgns_static)
-	include_directories("${CMAKE_SOURCE_DIR}/src/extlib/cgnslib/src/")
-	include_directories("${CMAKE_BINARY_DIR}/src/extlib/cgnslib/src/")
+	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/extlib/cgnslib/src/")
+	include_directories("${CMAKE_CURRENT_BINARY_DIR}/extlib/cgnslib/src/")
 endif()
