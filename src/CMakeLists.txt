@@ -1,6 +1,36 @@
 cmake_minimum_required ( VERSION 2.8 )
 project ( RW_MESH_LIB C )
 
+
+option ( CGNS_LIB "Enable cgns support" ON )
+
+if(CGNS_LIB)
+	message ( "-- CGNS lib enabled" )
+	
+	#set(CGNS_BUILD_CGNSTOOLS OFF)
+	#set(CGNS_BUILD_SHARED ON)
+	#set(CGNS_ENABLE_64BIT ON)
+	#set(CGNS_ENABLE_FORTRAN OFF)
+	#set(CGNS_ENABLE_HDF5 OFF)
+	#set(CGNS_ENABLE_LEGACY OFF)
+	#set(CGNS_ENABLE_SCOPING OFF)
+	#set(CGNS_ENABLE_TEST OFF)
+	#set(CGNS_USE_SHARED OFF)
+	
+	set ( CGNS_BUILD_CGNSTOOLS	OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_BUILD_SHARED		OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_ENABLE_64BIT		ON	CACHE INTERNAL "" FORCE )
+	set ( CGNS_ENABLE_FORTRAN	OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_ENABLE_HDF5		OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_ENABLE_LEGACY	OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_ENABLE_SCOPING	OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_ENABLE_TESTS		OFF	CACHE INTERNAL "" FORCE )
+	set ( CGNS_USE_SHARED 		OFF	CACHE INTERNAL "" FORCE )
+	
+	add_subdirectory(extlib/cgnslib)
+	
+endif()
+
 set ( LIBRARY_NAME "rw_mesh_lib" )
 set ( LIBRARY_HEADER 
 	rw_mesh.h
@@ -28,6 +58,6 @@ add_library ( ${LIBRARY_NAME} ${LIBRARY_TYPE} ${LIBRARY_SOURCE_FILES} )
 
 if(CGNS_LIB)
 	target_link_libraries (${LIBRARY_NAME} cgns_static)
-	include_directories("${CMAKE_SOURCE_DIR}/extlib/cgnslib/src/")
-	include_directories("${CMAKE_BINARY_DIR}/extlib/cgnslib/src/")
+	include_directories("${CMAKE_SOURCE_DIR}/src/extlib/cgnslib/src/")
+	include_directories("${CMAKE_BINARY_DIR}/src/extlib/cgnslib/src/")
 endif()
