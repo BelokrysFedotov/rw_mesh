@@ -144,7 +144,7 @@ int write_format_cgns_structured_simplified(
 	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ilo; ipnts[4] = jhi; ipnts[5] = khi;
 	cg_boco_write(index_file,index_base,index_zone,"Ilo", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
 
-	/*ipnts[0] = ihi; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = khi;
+	ipnts[0] = ihi; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = khi;
 	cg_boco_write(index_file,index_base,index_zone,"Ihi", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
 
 	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = klo; ipnts[3] = ihi; ipnts[4] = jlo; ipnts[5] = khi;
@@ -157,7 +157,7 @@ int write_format_cgns_structured_simplified(
 	cg_boco_write(index_file,index_base,index_zone,"Klo", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
 
 	ipnts[0] = ilo; ipnts[1] = jlo; ipnts[2] = khi; ipnts[3] = ihi; ipnts[4] = jhi; ipnts[5] = khi;
-	cg_boco_write(index_file,index_base,index_zone,"Khi", BCDataTypeNull,PointRange,2,ipnts,&index_bc);*/
+	cg_boco_write(index_file,index_base,index_zone,"Khi", BCDataTypeNull,PointRange,2,ipnts,&index_bc);
 
 	/* close CGNS file */
 	cg_close(index_file);
