@@ -29,5 +29,14 @@ int write_format_cgns_unstructured_simplified(
 	int CountOfCellFunctions, REAL*CellFunctions,
 	char*filename,int flags);
 
+int write_format_cgns_unstructured_simplified_with_bc(
+	int CountOfPoints, REAL3*Points,
+	int CountOfPointMasks, int*PointMasks,
+	int CountOfPointFunctions, REAL*PointFunctions,
+	int CountOfCells,int*Cells,int*CellSizes,int*CellTypes,int*CellOffset,
+	int CountOfCellMasks, int*CellMasks,
+	int CountOfCellFunctions, REAL*CellFunctions,
+	int BC_Counts,int*BC_TriFacesCount,int**BC_TriFaces,int*BC_QuadFacesCount,int**BC_QuadFaces,int*BC_Names,
+	char*filename,int flags);
 
 #endif /*RW_MESH_CGNS_H_*/
