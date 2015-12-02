@@ -16,3 +16,10 @@
 *.out
 *.app
 /build
+
+
+.Rhistory
+.project
+.cproject
+files
+tmp/
