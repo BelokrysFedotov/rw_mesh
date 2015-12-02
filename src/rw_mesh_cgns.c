@@ -379,6 +379,7 @@ int write_format_cgns_unstructured_simplified_with_bc(
 				sprintf(section_name,"Boundary %d tris",BC_Names[b]);
 				cg_section_write(index_file,index_base,index_zone,section_name,TRI_3,nelem_start+1,nelem_end,0,ielem,&index_section);
 				free(ielem);
+				nelem_start = nelem_end;
 			}
 			if(BC_QuadFacesCount&&BC_QuadFacesCount[b]){
 				nelem_end = nelem_start+BC_QuadFacesCount[b];
@@ -389,6 +390,7 @@ int write_format_cgns_unstructured_simplified_with_bc(
 				sprintf(section_name,"Boundary %d quads",BC_Names[b]);
 				cg_section_write(index_file,index_base,index_zone,section_name,QUAD_4,nelem_start+1,nelem_end,0,ielem,&index_section);
 				free(ielem);
+				nelem_start = nelem_end;
 			}
 		}
 
@@ -405,7 +407,6 @@ int write_format_cgns_unstructured_simplified_with_bc(
 		cg_gridlocation_write(FaceCenter);
 		free(ipnts);
 
-		nelem_start = nelem_end;
 	}
 
 
