@@ -4,6 +4,38 @@
 #include "rw_mesh_string.h"
 #include "rw_mesh_vtk.h"
 
+void le2be16 (unsigned char *d) {
+    unsigned char c;
+    c = d[0];d[0] = d[1];d[1] = c;
+}
+void be2le16 (unsigned char *d) {le2be16(d);}
+
+void le2be32 (unsigned char *d) {
+    unsigned char c;
+    c = d[0];d[0] = d[3];d[3] = c;
+    c = d[1];d[1] = d[2];d[2] = c;
+}
+void be2le32 (unsigned char *d) {le2be32(d);}
+
+void le2be64 (unsigned char *d) {
+    unsigned char c;
+    c = d[0];d[0] = d[7];d[7] = c;
+    c = d[1];d[1] = d[6];d[6] = c;
+    c = d[2];d[2] = d[5];d[5] = c;
+    c = d[3];d[3] = d[4];d[4] = c;
+}
+void  be2le64 (unsigned char *d) {le2be64(d);}
+
+void le2be (unsigned char *d,size_t size) {
+	if(size==2){
+		le2be16(d);
+	}else if(size==4){
+		le2be32(d);
+	} if(size==8){
+		le2be64(d);
+	}
+}
+void be2le (unsigned char *d,size_t size) {le2be(d,size);}
 
 int rw_mesh_vtk_struct_init(struct RW_MESH_VTK_STRUCT*VTK){
 	rw_mesh_vtk_struct_clean(VTK);
@@ -197,6 +229,11 @@ int rw_mesh_vtk_dataset_struct_free(struct RW_MESH_VTK_DATASET_STRUCT*DATASET){
 	return 0;
 }
 
+/**
+ * Определить тип по его названию
+ * @param string название типа
+ * return константу типа или RW_MESH_VTK_TYPE_NONE, если тип не определён
+ */
 int _parse_vtk_type(char*string){
 	if(strcmp(string,"bit")==0){
 		return RW_MESH_VTK_TYPE_BIT;
@@ -224,6 +261,11 @@ int _parse_vtk_type(char*string){
 	return RW_MESH_VTK_TYPE_NONE;
 }
 
+/**
+ * Определить размер типа
+ * @param type тип
+ * return размер элемента данного типа
+ */
 size_t _vtk_type_size(int type){
 	if(type==RW_MESH_VTK_TYPE_BIT || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_CHAR){
 		return sizeof(char);
@@ -247,13 +289,58 @@ size_t _vtk_type_size(int type){
 	return 0;
 }
 
+/**
+ * Выделить память под count элементов типа type
+ * @param type тип
+ * @param count размер массива
+ * return указатель на выделеную память
+ */
 void*_vtk_type_allocate(int type,int count){
 	return calloc(count,_vtk_type_size(type));
 }
 
-int _read_vtk_type_offset(int type,char*string,void*value,int offset){
+/**
+ *	Скопировать массив Data размером count элементов типа type
+ *		в массив RealData размером count элементов типа REAL
+ *		с приведением типов
+ */
+void _vtk_convert_type_array_to_REAL(int type,int count,void*Data,REAL*RealData){
+	int i;
+	for(i=0;i<count;i++){
+		if(type==RW_MESH_VTK_TYPE_BIT || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR){
+			RealData[i] = ((char*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_SHORT){
+			RealData[i] = ((unsigned short*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_SHORT){
+			RealData[i] = ((short*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_INT){
+			RealData[i] = ((unsigned int*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_INT){
+			RealData[i] = ((int*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_LONG){
+			RealData[i] = ((unsigned long*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_LONG){
+			RealData[i] = ((unsigned long*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_FLOAT){
+			RealData[i] = ((float*)Data)[i];
+		}else if(type==RW_MESH_VTK_TYPE_DOUBLE){
+			RealData[i] = ((double*)Data)[i];
+		}
+	}
+}
+
+/**
+ * Прочитать из строки string значение типа type в массив value по позиции offset
+ * @param type тип
+ * @param string строка с текстовым представлением значения
+ * @param value массив
+ * @param offset смещение в массиве
+ * return если успешно прочиталось, то 1, иначе 0
+ */
+int _read_vtk_type_offset_ascii(int type,char*string,void*value,int offset){
 	int rn;
 	char c;
+	unsigned int u;
 	if(type==RW_MESH_VTK_TYPE_BIT){
 		rn = sscanf(string,"%c",&c);
 		if(rn==1){
@@ -267,8 +354,8 @@ int _read_vtk_type_offset(int type,char*string,void*value,int offset){
 			return 1;
 		}
 		return 0;
-	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR){
-		rn = sscanf(string,"%c",&c);
+	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_CHAR){
+		rn = sscanf(string,"%c",(char*)value+offset);
 		return rn;
 	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_SHORT){
 		rn = sscanf(string,"%hu",(unsigned short*)value+offset);
@@ -298,83 +385,44 @@ int _read_vtk_type_offset(int type,char*string,void*value,int offset){
 	return 0;
 }
 
-int _read_vtk_type(int type,char*string,void*value){
-	return _read_vtk_type_offset(type,string,value,0);
+/**
+ * Прочитать из строки string значение типа type в value
+ * @param type тип
+ * @param string строка с текстовым представлением значения
+ * @param value указатель на ячейку памяти для записи данных
+ * return если успешно прочиталось, то 1, иначе 0
+ */
+int _read_vtk_type_ascii(int type,char*string,void*value){
+	return _read_vtk_type_offset_ascii(type,string,value,0);
 }
 
-int _read_vtk_type_as_REAL_offset(int type,char*string,REAL*value,int offset){
+/**
+ * Прочитать из строки string значение типа type и конвертировать сразу в REAL в массив value по позиции offset
+ * @param type тип
+ * @param string строка с текстовым представлением значения
+ * @param value массив
+ * @param offset смещение в массиве
+ * return если успешно прочиталось, то 1, иначе 0
+ */
+int _read_vtk_type_as_REAL_offset_ascii(int type,char*string,REAL*value,int offset){
 	int rn;
-	char c;
-	unsigned short us;
-	short s;
-	unsigned int ui;
-	int i;
-	unsigned long int ul;
-	long int l;
-	float f;
-	double d;
+	void*buffer;
 
-	rn = 0;
-	if(type==RW_MESH_VTK_TYPE_BIT || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR || type==RW_MESH_VTK_TYPE_UNSIGNED_CHAR){
-		rn = _read_vtk_type(type,string,&c);
-		if(rn==1)value[offset]=c;
-	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_SHORT){
-		rn = _read_vtk_type(type,string,&us);
-		if(rn==1)value[offset]=us;
-	}else if(type==RW_MESH_VTK_TYPE_SHORT){
-		rn = _read_vtk_type(type,string,&s);
-		if(rn==1)value[offset]=s;
-	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_INT){
-		rn = _read_vtk_type(type,string,&ui);
-		if(rn==1)value[offset]=ui;
-	}else if(type==RW_MESH_VTK_TYPE_INT){
-		rn = _read_vtk_type(type,string,&i);
-		if(rn==1)value[offset]=i;
-	}else if(type==RW_MESH_VTK_TYPE_UNSIGNED_LONG){
-		rn = _read_vtk_type(type,string,&ul);
-		if(rn==1)value[offset]=ul;
-	}else if(type==RW_MESH_VTK_TYPE_LONG){
-		rn = _read_vtk_type(type,string,&l);
-		if(rn==1)value[offset]=l;
-	}else if(type==RW_MESH_VTK_TYPE_FLOAT){
-		rn = _read_vtk_type(type,string,&f);
-		if(rn==1)value[offset]=f;
-	}else if(type==RW_MESH_VTK_TYPE_DOUBLE){
-		rn = _read_vtk_type(type,string,&d);
-		if(rn==1)value[offset]=d;
-	}
+	buffer = _vtk_type_allocate(type,1);
+	rn = _read_vtk_type_ascii(type,string,buffer);
+	if(rn==1) _vtk_convert_type_array_to_REAL(type,1,buffer,value+offset);
 	return rn;
 }
 
-int _read_vtk_array_type(FILE*fd,int count,int type,void*value,int*current_line,char*first_line){
-	int i;
-	char line[256];
-	char word[256];
-
-	i=0;
-	if(first_line && first_line[0]){
-		strcpy(line,first_line);
-	}else{
-		line[0]=0;
-	}
-	word[0]=0;
-	while(i<count){
-		if(line[0]==0){
-			read_line_trim(fd,line);(*current_line)++;
-		}
-		string_cut_word(line,word);
-
-		if(_read_vtk_type_offset(type,word,value,i)!=1){
-			rw_mesh_set_error(*current_line,"Error in reading values");
-			return 1;
-		}
-		i++;
-	}
-
-	return 0;
-}
-
-int _read_vtk_array_as_REAL_type(FILE*fd,int count,int type,REAL*value,int*current_line){
+/**
+ * Прочитать из ascii файла fd count элементов типа type
+ * @param fd дескриптор файла
+ * @param count число элементов
+ * @param type тип элементов
+ * @param value массив в который будут прочитаны элементы
+ * @param current_line номер текущей строки в файле
+ */
+int _read_vtk_array_type_ascii(FILE*fd,int count,int type,void*value,int*current_line){
 	int i;
 	char line[256];
 	char word[256];
@@ -388,7 +436,7 @@ int _read_vtk_array_as_REAL_type(FILE*fd,int count,int type,REAL*value,int*curre
 		}
 		string_cut_word(line,word);
 
-		if(_read_vtk_type_as_REAL_offset(type,word,value,i)!=1){
+		if(_read_vtk_type_offset_ascii(type,word,value,i)!=1){
 			rw_mesh_set_error(*current_line,"Error in reading values");
 			return 1;
 		}
@@ -397,6 +445,92 @@ int _read_vtk_array_as_REAL_type(FILE*fd,int count,int type,REAL*value,int*curre
 
 	return 0;
 }
+
+/**
+ * Прочитать из binary файла fd count элементов типа type
+ * @param fd дескриптор файла
+ * @param count число элементов
+ * @param type тип элементов
+ * @param value массив в который будут прочитаны элементы
+ * @param current_line номер текущей строки в файле
+ */
+int _read_vtk_array_type_binary(FILE*fd,int count,int type,void*value,int*current_line){
+	int i;
+	char c;
+	size_t size,read_size;
+
+	size = _vtk_type_size(type);
+	if(!size){
+		return 1;
+	}
+
+	read_size = fread(value,size,count,fd);
+	(*current_line)++;
+
+	if(read_size!=count){
+		rw_mesh_set_error(*current_line,"Error in reading binary data");
+		return 1;
+	}
+
+	for(i=0;i<count;i++)
+		be2le(value+size*i,size);
+
+	if(fread(&c,sizeof(char),1,fd)){
+		if(c=='\r'){
+			if(fread(&c,sizeof(char),1,fd)){
+				if(c!='\n'){
+					rw_mesh_set_error(*current_line,"Error in reading binary data. Skipped line ending symbols");
+				}
+			}
+		}else if(c!='\n'){
+			rw_mesh_set_error(*current_line,"Error in reading binary data. Skipped line ending symbols");
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * Прочитать из файла fd count элементов типа type
+ * @param fd дескриптор файла
+ * @param count число элементов
+ * @param type тип элементов
+ * @param value массив в который будут прочитаны элементы
+ * @param current_line номер текущей строки в файле
+ * @param isBinary бинарный ли файл
+ */
+int _read_vtk_array_type(FILE*fd,int count,int type,void*value,int*current_line,int isBinary){
+	if(isBinary){
+		return _read_vtk_array_type_binary(fd,count,type,value,current_line);
+	}else{
+		return _read_vtk_array_type_ascii(fd,count,type,value,current_line);
+	}
+	return 0;
+}
+
+/**
+ * Прочитать из файла fd count элементов типа type и записать из как REAL в массив value
+ * @param fd дескриптор файла
+ * @param count число элементов
+ * @param type тип элементов
+ * @param value массив в который будут прочитаны элементы
+ * @param current_line номер текущей строки в файле
+ * @param isBinary бинарный ли файл
+ */
+int _read_vtk_array_as_REAL_type(FILE*fd,int count,int type,REAL*value,int*current_line,int isBinary){
+	int i,r;
+	size_t size;
+	void*buffer;
+	size = _vtk_type_size(type);
+	buffer = (void*)calloc(count,size);
+	r = _read_vtk_array_type(fd,count,type,buffer,current_line,isBinary);
+	if(r) return r;
+	_vtk_convert_type_array_to_REAL(type,count,buffer,value);
+	free(buffer);
+	return 0;
+}
+
 
 struct RW_MESH_VTK_DATASET_STRUCT*_vtk_add_data(struct RW_MESH_VTK_STRUCT*VTK,int data_object){
 	int d;
@@ -429,7 +563,7 @@ struct RW_MESH_VTK_DATASET_STRUCT*_vtk_add_data(struct RW_MESH_VTK_STRUCT*VTK,in
 	return Data;
 }
 
-int _vtk_read_field_data(struct RW_MESH_VTK_STRUCT*VTK,int data_object,char*line,char*word,FILE*fd,int*current_line){
+int _vtk_read_field_data(struct RW_MESH_VTK_STRUCT*VTK,int data_object,char*line,char*word,FILE*fd,int*current_line,int isBinary){
 	struct RW_MESH_VTK_DATASET_STRUCT*Data;
 	struct RW_MESH_VTK_DATA_FIELD_STRUCT*Field;
 	int i,a,size;
@@ -492,7 +626,7 @@ int _vtk_read_field_data(struct RW_MESH_VTK_STRUCT*VTK,int data_object,char*line
 			//f 00 f 01 ... f 0(numComponents-1)
 			if(Field->Arrays[i].numComponents*Field->Arrays[i].numTuples){
 				Field->Arrays[i].values = _vtk_type_allocate(Field->Arrays[i].dataType,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples);
-				if(_read_vtk_array_type(fd,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType,Field->Arrays[i].values,current_line,0)){
+				if(_read_vtk_array_type(fd,Field->Arrays[i].numComponents*Field->Arrays[i].numTuples,Field->Arrays[i].dataType,Field->Arrays[i].values,current_line,isBinary)){
 					return 1;
 				}
 			}
@@ -515,6 +649,10 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 	int type;
 	int data_object,data_size;
 	int CountOfPoints,CountOfCells;
+	int isBinary;
+	int*buffer;
+
+	long int ftell_position;
 
 	struct RW_MESH_VTK_STRUCTURED_POINTS_STRUCT*	StructuredPoints;
 	struct RW_MESH_VTK_STRUCTURED_GRID_STRUCT*		StructuredGrid;
@@ -564,14 +702,14 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 	// read ASCII | BINARY
 	read_line_trim(fd,line); current_line++;
 
-	if(strcmp(line,"BINARY")==0){
-		rw_mesh_set_error(current_line,"File in Binary format. Current version of reader don't work with it");
-		return 1;
-	}
-
-	if(strcmp(line,"ASCII")!=0){
+	if(strcmp(line,"ASCII")!=0 && strcmp(line,"BINARY")!=0){
 		rw_mesh_set_error(current_line,"Unknown format of file. It must be ASCII or BINARY");
 		return 1;
+	}
+	if(strcmp(line,"BINARY")==0){
+		isBinary = 1;
+	}else{
+		isBinary = 0;
 	}
 
 	//read DATASET type and DATASET
@@ -668,7 +806,7 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 			}
 
 			StructuredGrid->Points = (REAL*)calloc(CountOfPoints*3,sizeof(REAL));
-			if(_read_vtk_array_as_REAL_type(fd,CountOfPoints*3,type,StructuredGrid->Points,&current_line)){
+			if(_read_vtk_array_as_REAL_type(fd,CountOfPoints*3,type,StructuredGrid->Points,&current_line,isBinary)){
 				return 1;
 			}
 
@@ -702,7 +840,8 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 
 		if(strcmp(word,"FIELD")==0){
 			//it may be FIELD data before Points and Cells
-			if(_vtk_read_field_data(VTK,RW_MESH_VTK_DATA_OBJECT_NONE,line,word,fd,&current_line)){
+			//TODO binary
+			if(_vtk_read_field_data(VTK,RW_MESH_VTK_DATA_OBJECT_NONE,line,word,fd,&current_line,isBinary)){
 				return 1;
 			}
 
@@ -739,7 +878,7 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 			}
 
 			UnstructuredGrid->Points = (REAL*)calloc(UnstructuredGrid->CountOfPoints*3,sizeof(REAL));
-			if(_read_vtk_array_as_REAL_type(fd,UnstructuredGrid->CountOfPoints*3,type,UnstructuredGrid->Points,&current_line)){
+			if(_read_vtk_array_as_REAL_type(fd,UnstructuredGrid->CountOfPoints*3,type,UnstructuredGrid->Points,&current_line,isBinary)){
 				return 1;
 			}
 
@@ -789,36 +928,53 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 
 				UnstructuredGrid->CellOffset[0] = 0;
 
-				for(i=0;i<UnstructuredGrid->CountOfCells;i++){
-					//read numPointsi , p, j, k, l, ...
-					read_line_trim(fd,line); current_line++;
-
-					string_cut_word(line,word);
-					if(sscanf(word,"%d",&a)!=1){
-						rw_mesh_set_error(current_line,"Can't read cell size");
+				if(isBinary){
+					buffer = (int*)calloc(size+UnstructuredGrid->CountOfCells,sizeof(int));
+					if(_read_vtk_array_type_binary(fd,size+UnstructuredGrid->CountOfCells,RW_MESH_VTK_TYPE_INT,buffer,&current_line)){
+						rw_mesh_set_error(current_line,"Can't read cells");
 						return 1;
 					}
-					UnstructuredGrid->CellSizes[i] = a;
 
-					UnstructuredGrid->CellOffset[i+1] = UnstructuredGrid->CellOffset[i]+UnstructuredGrid->CellSizes[i];
-					if(i+1==UnstructuredGrid->CountOfCells){
-						if(UnstructuredGrid->CellOffset[i+1] != size){
-							rw_mesh_set_error(current_line,"Summary size of cells don't equal size of cells");
-							return 1;
-						}
-					}else{
-						if(UnstructuredGrid->CellOffset[i+1] > size){
-							rw_mesh_set_error(current_line,"Summary size of cells more than size of cells");
-							return 1;
+					for(i=j=0;i<UnstructuredGrid->CountOfCells;i++){
+						UnstructuredGrid->CellSizes[i] = buffer[j]; j++;
+						UnstructuredGrid->CellOffset[i+1] = UnstructuredGrid->CellOffset[i]+UnstructuredGrid->CellSizes[i];
+						for(k=0;k<UnstructuredGrid->CellSizes[i];k++){
+							UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+k] = buffer[j]; j++;
 						}
 					}
-					for(j=0;j<UnstructuredGrid->CellSizes[i];j++){
+					free(buffer);
+				}else{
+					for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+						//read numPointsi , p, j, k, l, ...
+						read_line_trim(fd,line); current_line++;
+
 						string_cut_word(line,word);
 						if(sscanf(word,"%d",&a)!=1){
-							rw_mesh_set_error(current_line,"Can't read cell vertex");
+							rw_mesh_set_error(current_line,"Can't read cell size");
 							return 1;
 						}
-						UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+j] = a;
+						UnstructuredGrid->CellSizes[i] = a;
+
+						UnstructuredGrid->CellOffset[i+1] = UnstructuredGrid->CellOffset[i]+UnstructuredGrid->CellSizes[i];
+						if(i+1==UnstructuredGrid->CountOfCells){
+							if(UnstructuredGrid->CellOffset[i+1] != size){
+								rw_mesh_set_error(current_line,"Summary size of cells don't equal size of cells");
+								return 1;
+							}
+						}else{
+							if(UnstructuredGrid->CellOffset[i+1] > size){
+								rw_mesh_set_error(current_line,"Summary size of cells more than size of cells");
+								return 1;
+							}
+						}
+						for(j=0;j<UnstructuredGrid->CellSizes[i];j++){
+							string_cut_word(line,word);
+							if(sscanf(word,"%d",&a)!=1){
+								rw_mesh_set_error(current_line,"Can't read cell vertex");
+								return 1;
+							}
+							UnstructuredGrid->Cells[UnstructuredGrid->CellOffset[i]+j] = a;
+						}
 					}
 				}
 				CountOfCells = UnstructuredGrid->CountOfCells;
@@ -855,14 +1011,21 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 
 				UnstructuredGrid->CellTypes = (int*)calloc(UnstructuredGrid->CountOfCells,sizeof(int));
 
-				for(i=0;i<UnstructuredGrid->CountOfCells;i++){
-					//read type_i
-					read_line_trim(fd,line); current_line++;
-					if(sscanf(line,"%d",&a)!=1){
+				if(isBinary){
+					if(_read_vtk_array_type_binary(fd,UnstructuredGrid->CountOfCells,RW_MESH_VTK_TYPE_INT,UnstructuredGrid->CellTypes,&current_line)){
 						rw_mesh_set_error(current_line,"Can't read count of cell type");
 						return 1;
 					}
-					UnstructuredGrid->CellTypes[i] = a;
+				}else{
+					for(i=0;i<UnstructuredGrid->CountOfCells;i++){
+						//read type_i
+						read_line_trim(fd,line); current_line++;
+						if(sscanf(line,"%d",&a)!=1){
+							rw_mesh_set_error(current_line,"Can't read count of cell type");
+							return 1;
+						}
+						UnstructuredGrid->CellTypes[i] = a;
+					}
 				}
 			}
 
@@ -921,7 +1084,7 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 		}else if(strcmp(word,"FIELD")==0){
 			// first word FIELD
 
-			_vtk_read_field_data(VTK,data_object,line,word,fd,&current_line);
+			_vtk_read_field_data(VTK,data_object,line,word,fd,&current_line,isBinary);
 
 		}else if(strcmp(word,"SCALARS")==0){
 			// first word SCALARS
@@ -955,20 +1118,25 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 				Scalars->numComp = 1;
 			}
 
-			read_line_trim(fd,line);current_line++;
+			ftell_position = ftell(fd);
 
+			//try to read line with LOOKUP_TABLE
+			read_line_trim(fd,line);current_line++;
 			string_get_word(line,word);
 			if(strcmp(word,"LOOKUP_TABLE")==0){
+				// yes it us LOOKUP_TABLE, read it
 				string_cut_word(line,word);
 				string_cut_word(line,word);
 				Scalars->LookupTable = (char*)calloc(strlen(word)+1,sizeof(char));
 				strcpy(Scalars->LookupTable,word);
 			}else{
-				line[0] = 0;
+				// no, come back and read data
+				current_line--;
+				fseek(fd,ftell_position,SEEK_SET);
 			}
 
 			Scalars->values = _vtk_type_allocate(Scalars->dataType,Data->Counts*Scalars->numComp);
-			if(_read_vtk_array_type(fd,Data->Counts*Scalars->numComp,Scalars->dataType,Scalars->values,&current_line,line)){
+			if(_read_vtk_array_type(fd,Data->Counts*Scalars->numComp,Scalars->dataType,Scalars->values,&current_line,isBinary)){
 				return 1;
 			}
 		}else{
@@ -1288,34 +1456,6 @@ int _get_data_type_name(int DataType,char*string){
 		strcpy(string,"unknown");
 	}
 	return 0;
-}
-
-void le2be16 (unsigned char *d) {
-    unsigned char c;
-    c = d[0];d[0] = d[1];d[1] = c;
-}
-
-void le2be32 (unsigned char *d) {
-    unsigned char c;
-    c = d[0];d[0] = d[3];d[3] = c;
-    c = d[1];d[1] = d[2];d[2] = c;
-}
-
-void le2be64 (unsigned char *d) {
-    unsigned char c;
-    c = d[0];d[0] = d[7];d[7] = c;
-    c = d[1];d[1] = d[6];d[6] = c;
-    c = d[2];d[2] = d[5];d[5] = c;
-    c = d[3];d[3] = d[4];d[4] = c;
-}
-void le2be (unsigned char *d,size_t size) {
-	if(size==2){
-		le2be16(d);
-	}else if(size==4){
-		le2be32(d);
-	} if(size==8){
-		le2be64(d);
-	}
 }
 
 int _write_array_data_type_binary(FILE*fd,void*Data,int Count,int DataType){

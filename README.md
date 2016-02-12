@@ -9,7 +9,7 @@ Supports triangle, quad and mixed surface mesh, stuctured and unstructed 3d volu
 Supportes formats:
 * Geomview OFF (*.off, *coff, *.noff and etc)
 * Medit (*.mesh)
-* VTK 4.2 (ascii and binary(only write))
+* VTK 4.2 (ascii and binary)
 * Plot3D (only read)
 * CGNS (only write, using cgnslib)
 
