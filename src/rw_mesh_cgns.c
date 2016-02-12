@@ -43,12 +43,16 @@ int write_format_cgns_structured_simplified(
 	int icelldim,iphysdim;
 	cgsize_t isize[3][3];
 
+	int enable_dimention;
+
 	int ilo, ihi, jlo, jhi, klo, khi;
 	cgsize_t ipnts[6];
 	double exponents[5];
 
 	char error[256];
 	char field_name[256];
+
+	enable_dimention = 0;
 
 	if (cg_open(filename,CG_MODE_WRITE,&index_file)!=CG_OK){
 		strcpy(error, cg_get_error());
@@ -76,6 +80,7 @@ int write_format_cgns_structured_simplified(
 	isize[2][0]=0;
 	isize[2][1]=0;
 	isize[2][2]=0;
+
 	/* create zone */
 	cg_zone_write(index_file,index_base,"Zone",*isize,Structured,&index_zone);
 	/* write grid coordinates (user must use SIDS-standard names here) */
@@ -92,22 +97,24 @@ int write_format_cgns_structured_simplified(
 
 	free(x);
 
-	// добавляем информацию про размерности используемые в файле
-//	cg_goto(index_file,index_base,"end");
-//	cg_dataclass_write(Dimensional);
-//	cg_units_write(Kilogram,Meter,Second,Kelvin,Degree);
-//	cg_units_write(MassUnitsNull,LengthUnitsNull,TimeUnitsNull,TemperatureUnitsNull,Radian);
+	if(enable_dimention){
+		// добавляем информацию про размерности используемые в файле
+		cg_goto(index_file,index_base,"end");
+		cg_dataclass_write(Dimensional);
+		cg_units_write(Kilogram,Meter,Second,Kelvin,Degree);
+		cg_units_write(MassUnitsNull,LengthUnitsNull,TimeUnitsNull,TemperatureUnitsNull,Radian);
 
-	// задаём размерность координат
-//	exponents[0]=0;
-//	exponents[1]=1;
-//	exponents[2]=0;
-//	exponents[3]=0;
-//	exponents[4]=0;
-//	for(i=1;i<=3;i++){
-//		cg_goto(index_file,index_base,"Zone_t",1,"GridCoordinates_t",1,"DataArray_t",i,"end");
-//		cg_exponents_write(RealDouble,exponents);
-//	}
+		// задаём размерность координат
+		exponents[0]=0;
+		exponents[1]=1;
+		exponents[2]=0;
+		exponents[3]=0;
+		exponents[4]=0;
+		for(i=1;i<=3;i++){
+			cg_goto(index_file,index_base,"Zone_t",1,"GridCoordinates_t",1,"DataArray_t",i,"end");
+			cg_exponents_write(RealDouble,exponents);
+		}
+	}
 
 	// маски и функции на вершинах
 	if(CountOfPointMasks || CountOfPointFunctions){
