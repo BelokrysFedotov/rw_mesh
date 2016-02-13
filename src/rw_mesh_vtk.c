@@ -1149,6 +1149,7 @@ int read_format_vtk_struct(struct RW_MESH_VTK_STRUCT*VTK,char filename[256],int 
 		}
 	}
 
+	fclose(fd);
 
 	return 0;
 }
@@ -1335,6 +1336,8 @@ int read_format_vtk_unstructured_simplified(
 
 	if(VTK->type != RW_MESH_VTK_TYPE_UNSTRUCTURED_GRID){
 		rw_mesh_set_error(0,"It isn't unstructed grid, it's some other type of grid");
+		rw_mesh_vtk_struct_free(VTK);
+		ffree(VTK);
 		return 1;
 	}
 
@@ -1412,6 +1415,9 @@ int read_format_vtk_unstructured_simplified(
 		if(CountOfCellFunctions)*CountOfCellFunctions=0;
 		if(CellFunctions)*CellFunctions=NULL;
 	}
+
+	rw_mesh_vtk_struct_free(VTK);
+	ffree(VTK);
 
 	return 0;
 }
