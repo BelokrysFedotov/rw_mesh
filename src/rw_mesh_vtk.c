@@ -473,7 +473,7 @@ int _read_vtk_array_type_binary(FILE*fd,int count,int type,void*value,int*curren
 	}
 
 	for(i=0;i<count;i++)
-		be2le(value+size*i,size);
+		be2le((char*)value+size*i,size);
 
 	if(fread(&c,sizeof(char),1,fd)){
 		if(c=='\r'){
@@ -2174,7 +2174,7 @@ int rw_mesh_vtk_add_vectors_mask(struct RW_MESH_VTK_STRUCT*VTK,int data_object,i
 
 	for(i=j=0;i<Count;i++)
 		if(mask[i]){
-			memcpy(Vectors->values+j*3*_vtk_type_size(data_type),values+i*3*_vtk_type_size(data_type),3*_vtk_type_size(data_type));
+			memcpy((char*)(Vectors->values)+j*3*_vtk_type_size(data_type),(char*)(values)+i*3*_vtk_type_size(data_type),3*_vtk_type_size(data_type));
 			j++;
 		}
 
