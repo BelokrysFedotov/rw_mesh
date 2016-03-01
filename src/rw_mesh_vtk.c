@@ -2001,6 +2001,70 @@ struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified(int CountO
 
 	return VTK;
 }
+struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified_uniform(int CountOfPoints, REAL3*Points,int CountOfCells,int*Cells,int CellType){
+	struct RW_MESH_VTK_STRUCT*VTK;
+	int i,size;
+	int*CellSizes;
+	int*CellTypes;
+	int*CellOffset;
+
+	if(CountOfCells>0){
+		switch(CellType){
+			case RW_MESH_VTK_CELL_TYPE_NONE: size = 0; break;
+			case RW_MESH_VTK_CELL_TYPE_TRIANGLE: size = 3; break;
+			case RW_MESH_VTK_CELL_TYPE_QUAD: size = 4; break;
+			case RW_MESH_VTK_CELL_TYPE_TETRA: size = 4; break;
+			case RW_MESH_VTK_CELL_TYPE_VOXEL: size = 8; break;
+			case RW_MESH_VTK_CELL_TYPE_HEXAHEDRON: size = 8; break;
+			case RW_MESH_VTK_CELL_TYPE_WEDGE: size = 6; break;
+			case RW_MESH_VTK_CELL_TYPE_PYRAMID: size = 5; break;
+			default: return NULL;
+		}
+		CellSizes = (int*)calloc(CountOfCells,sizeof(int));
+		CellTypes = (int*)calloc(CountOfCells,sizeof(int));
+		CellOffset = (int*)calloc(CountOfCells,sizeof(int));
+		CellOffset[0] = 0;
+		for(i=0;i<CountOfCells;i++){
+			CellSizes[i] = size;
+			CellTypes[i] = CellType;
+			CellOffset[i+1] = CellOffset[i] + size;
+		}
+	}else{
+		CellSizes = NULL;
+		CellOffset = NULL;
+		CellTypes = NULL;
+	}
+
+	VTK = rw_mesh_vtk_create_unstructured_simplified(CountOfPoints,Points,CountOfCells,Cells,CellSizes,CellTypes,CellOffset);
+	ffree(CellSizes);
+	ffree(CellOffset);
+	free(CellTypes);
+
+	return VTK;
+}
+
+struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified_uniform_2d(int CountOfPoints, REAL2*Points,int CountOfCells,int*Cells,int CellType){
+	int i;
+	REAL3*p;
+	struct RW_MESH_VTK_STRUCT*VTK;
+
+	if(CountOfPoints>0){
+		p = (REAL3*)calloc(CountOfPoints,sizeof(REAL3));
+		for(i=0;i<CountOfPoints;i++){
+			p[i][0] = Points[i][0];
+			p[i][1] = Points[i][1];
+			p[i][2] = 0.e0;
+		}
+	}else{
+		p = NULL;
+	}
+
+	VTK = rw_mesh_vtk_create_unstructured_simplified_uniform(CountOfPoints,p,CountOfCells,Cells,CellType);
+
+	ffree(p);
+	return VTK;
+}
+
 
 int rw_mesh_vtk_add_scalars(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,char*name){
 	struct RW_MESH_VTK_DATASET_STRUCT*Data;

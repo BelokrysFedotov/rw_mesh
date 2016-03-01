@@ -228,6 +228,8 @@ int rw_mesh_vtk_dataset_struct_free(struct RW_MESH_VTK_DATASET_STRUCT*DATASET);
 
 struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_structured_simplified(int Nx,int Ny,int Nz, REAL3*Points);
 struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified(int CountOfPoints, REAL3*Points,int CountOfCells,int*Cells,int*CellSizes,int*CellTypes,int*CellOffset);
+struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified_uniform(int CountOfPoints, REAL3*Points,int CountOfCells,int*Cells,int CellType);
+struct RW_MESH_VTK_STRUCT* rw_mesh_vtk_create_unstructured_simplified_uniform_2d(int CountOfPoints, REAL2*Points,int CountOfCells,int*Cells,int CellType);
 
 int rw_mesh_vtk_add_scalars(struct RW_MESH_VTK_STRUCT*VTK,int data_object,int Count,int data_type,void*values,char*name);
 
