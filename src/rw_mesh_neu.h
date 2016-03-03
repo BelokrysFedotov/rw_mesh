@@ -153,5 +153,9 @@ int write_format_neu_simplified_uniform(
 		int CountOfBoundaryConditions, int*BCNumber,int*BCCountOfCells, int**BCCells,int**BCFaces,
 		char*filename);
 
+/**
+ * Прочитать сетку в Mesh из файла filename в формате neu
+ */
+int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename);
 
 #endif /* NEU_H_ */

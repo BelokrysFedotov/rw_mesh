@@ -536,46 +536,188 @@ int write_format_neu_simplified_uniform(
 	return r;
 }
 
-/*int readUnstructedMeshFromNEUFile(struct unstructedMesh*Mesh,char*filename){
+/**
+ * Прочитать из потока первую строку, пропуская комментарии
+ * В формате neu комментарии начинаются с символа /
+ */
+int read_line_skip_comments_neu (FILE * STREAM, char *line,int*linecounter){
+	int r;
+	do{
+		r=rw_mesh_read_line(STREAM,line);
+		if(linecounter)*linecounter = *linecounter+1;
+	}while(r>=0 && line[0]=='/');
+	return r;
+}
+
+int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
+	__save_locale;
+	int current_line;
 	int i,j,k;
 	FILE*fd;
-	char s[256],s2[256];
+	REAL3 Point;
+	char line[256],buf1[256],buf2[256];
+	char section_name[256],section_version[256];
 	int n,n2,n3,n4;
 	int ct;
-	int line=0;
+	int section_end_skipped;
 #define max_cells_size 8
 
-	initUnstructedMesh(Mesh);
+	neu_mesh_struct_init(Mesh);
 
-	fd = fopen (filename, "r");
+	rw_mesh_set_filename(filename);
+	fd=fopen(filename,"r");if(fd==NULL){
+		rw_mesh_set_error(0,"Can't find file");
+		return 1;
+	}
+	current_line = 0;
 
-	line++;read_line(fd,s); //:CONTROL INFO 2.3.16
-	//if(!slre_match_one("^[\\s*]?CONTROL[\\s]+INFO[\\s]+[\\d]+\\.[\\d]+\\.[\\d]+[\\s*]?$",s)){printf("Error parsing on line %d\n",line);return line;}
-	line++;read_line(fd,s); //:** GAMBIT NEUTRAL FILE
-	//if(!slre_match_one("^[\\s*]?..[\\s]+GAMBIT[\\s]+NEUTRAL[\\s]+FILE[\\s*]?$",s)){printf("Error parsing on line %d\n",line);return line;}
-	line++;read_line(fd,s);//:EXAMPLE FILE
-	line++;read_line(fd,s);//:PROGRAM:               Testing     VERSION:  0.1
-	line++;read_line(fd,s);//:Oct 2011
-	line++;read_line(fd,s);//:NUMNP     NELEM     NGRPS    NBSETS     NDFCD     NDFVL
+	//read HEADER SECTION
+	{
+		//:CONTROL INFO 2.3.16
+		read_line_skip_comments_neu(fd,line,&current_line);
+		k = sscanf(line,"%20s%20s",section_name,section_version);
+		if(k!=1 && k!=2){
+			rw_mesh_set_error(current_line,"Incorrect header section");
+			close(fd);
+			return 1;
+		}
+		string_trim(section_name);
+		if(strcmp(section_name,"CONTROL INFO")!=0){
+			rw_mesh_set_error(current_line,"Incorrect header section");
+			close(fd);
+			return 1;
+		}
 
-	fscanf(fd,"%d",&(Mesh->CountOfPoints));
-	fscanf(fd,"%10d",&(Mesh->CountOfCells));
-	fscanf(fd,"%10d",&n); // Number of element groups
-	fscanf(fd,"%10d",&Mesh->CountOfBoundaryConditions ); //Number of boundary condition sets
-	fscanf(fd,"%10d",&n); // Number of coordinate directions (2 or 3)
-	fscanf(fd,"%10d\n",&n); // Number of coordinate directions (2 or 3)
+		//:** GAMBIT NEUTRAL FILE
+		read_line_skip_comments_neu(fd,line,&current_line);
+		string_trim(line);
+		if(strcmp(line,"** GAMBIT NEUTRAL FILE")!=0){
+			rw_mesh_set_error(current_line,"Incorrect header section");
+			close(fd);
+			return 1;
+		}
 
-	line++;read_line(fd,s); //:ENDOFSECTION
+		// skip information about title, date, time, and program
+		//:%Title%
+		read_line_skip_comments_neu(fd,line,&current_line);
 
-	line++;read_line(fd,s); //:NODAL COORDINATES %[^\n]s\n
-	if(Mesh->CountOfPoints>0){
-		Mesh->Points = (REAL*)calloc(Mesh->CountOfPoints,3*sizeof(REAL));
-		for(i=0;i<Mesh->CountOfPoints;i++){
-			fscanf(fd," %10d %lf %lf %lf\n",&j,&Mesh->Points[i*3],&Mesh->Points[i*3+1],&Mesh->Points[i*3+2]);
+		//:PROGRAM:    %ProgramName%     VERSION:  %ProgramVersion%
+		read_line_skip_comments_neu(fd,line,&current_line);
+
+		//:%Date% %Time%
+		read_line_skip_comments_neu(fd,line,&current_line);
+
+		//:NUMNP     NELEM     NGRPS    NBSETS     NDFCD     NDFVL
+		read_line_skip_comments_neu(fd,line,&current_line);
+		if(strcmp(line,"     NUMNP     NELEM     NGRPS    NBSETS     NDFCD     NDFVL")!=0){
+			rw_mesh_set_error(current_line,"Incorrect header section");
+			close(fd);
+			return 1;
+		}
+
+		//:%NUMNP%     %NELEM%     %NGRPS%    %NBSETS%     %NDFCD%     %NDFVL%
+		read_line_skip_comments_neu(fd,line,&current_line);
+		if(sscanf(line,"%10d%10d%10d%10d%10d%10d\n",
+				&(Mesh->CountOfPoints),
+				&(Mesh->CountOfCells),
+				&n, // Number of element groups
+				&Mesh->CountOfBoundaryConditions, //Number of boundary condition sets
+				&Mesh->Dimension, // Number of coordinate directions (2 or 3)
+				&n // Number of coordinate directions (2 or 3)
+				)!=6){
+			rw_mesh_set_error(current_line,"Incorrect header section");
+			close(fd);
+			return 1;
+		}
+
+		if(Mesh->Dimension!=2 || Mesh->Dimension!=3){
+			rw_mesh_set_error(current_line,"Incorrect coordinate directions (dimension)");
+			close(fd);
+			return 1;
+		}
+
+
+		//:ENDOFSECTION
+		read_line_skip_comments_neu(fd,line,&current_line);
+		if(strcmp(line,"ENDOFSECTION")!=0){
+			rw_mesh_set_error(current_line,"Incorrect header section");
+			close(fd);
+			return 1;
+		}
+
+	}
+
+	//read sections
+	while(read_line_skip_comments_neu(fd,line,&current_line)>=0){
+		k = sscanf(line,"%20s%20s",section_name,section_version);
+		if(k!=1 && k!=2){
+			rw_mesh_set_error(current_line,"Incorrect section name");
+			close(fd);
+			return 1;
+		}
+		section_end_skipped = 0;
+		string_trim(section_name);
+		if(strcmp(section_name,"NODAL COORDINATES")==0){
+			if(Mesh->CountOfPoints>0){
+				Mesh->Points = (REAL*)calloc(Mesh->CountOfPoints*Mesh->Dimension,sizeof(REAL));
+
+				for(i=0;i<Mesh->CountOfPoints;i++){
+					if(read_line_skip_comments_neu(fd,line,&current_line)<0){
+						rw_mesh_set_error(current_line,"Incorrect section NODAL COORDINATES. Not enough lines");
+						close(fd);
+						return 1;
+					}
+					if(Mesh->Dimension==2){
+						if(sscanf(line,"%10d%20lf%20lf\n",&j,Point+0,Point+1)!=2){
+							rw_mesh_set_error(current_line,"Incorrect section NODAL COORDINATES");
+							close(fd);
+							return 1;
+						}
+					}else{
+						if(sscanf(line,"%10d%20lf%20lf%20lf\n",&j,Point+0,Point+1,Point+2)!=3){
+							rw_mesh_set_error(current_line,"Incorrect section NODAL COORDINATES");
+							close(fd);
+							return 1;
+						}
+					}
+					//Ignore global node number
+					/*j = j - 1;
+					if(j<0 || j>=Mesh->CountOfPoints){
+						rw_mesh_set_error(current_line,"Incorrect section NODAL COORDINATES. Incorrect node number");
+						close(fd);
+						return 1;
+					}*/
+					for(k=0;k<Mesh->Dimension;k++)
+						Mesh->Points[Mesh->Dimension*i+k] = Point[k];
+				}
+			}
+		}else{
+			//skip unknown section
+			while((n=read_line_skip_comments_neu(fd,line,&current_line))>=0 && strcmp(line,"ENDOFSECTION")!=0);
+
+			if(strcmp(line,"ENDOFSECTION") != 0){
+				rw_mesh_set_error(current_line,"Unknown section don't have end");
+				close(fd);
+				return 1;
+			}
+			section_end_skipped = 1;
+		}
+
+		if(!section_end_skipped){
+			//:ENDOFSECTION
+			read_line_skip_comments_neu(fd,line,&current_line);
+			if(strcmp(line,"ENDOFSECTION")!=0){
+				rw_mesh_set_error(current_line,"Section don't have end");
+				close(fd);
+				return 1;
+			}
 		}
 	}
-	line++;read_line(fd,s); //:ENDOFSECTION
 
+
+
+/*
+	}
 	line++;read_line(fd,s); //:ELEMENTS/CELLS 2.3.16
 
 	if(Mesh->CountOfCells>0){
@@ -677,10 +819,9 @@ int write_format_neu_simplified_uniform(
 			line++;read_line(fd,s); //:ENDOFSECTION
 
 		}
-	}
+	}*/
 
 	fclose(fd);
-	compressUnstructedMesh(Mesh);
 
 	return 0;
-}*/
+}
