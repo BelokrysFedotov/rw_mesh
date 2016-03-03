@@ -548,6 +548,9 @@ int read_line_skip_comments_neu (FILE * STREAM, char *line,int*linecounter){
 	}while(r>=0 && line[0]=='/');
 	return r;
 }
+void string_empty(char *line,int length){
+	memset(line,0,length*sizeof(char));
+}
 
 int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 	__save_locale;
@@ -575,7 +578,9 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 	{
 		//:CONTROL INFO 2.3.16
 		read_line_skip_comments_neu(fd,line,&current_line);
-		k = sscanf(line,"%20s%20s",section_name,section_version);
+		string_empty(section_name,256);
+		string_empty(section_version,256);
+		k = sscanf(line,"%20c%20c",section_name,section_version);
 		if(k!=1 && k!=2){
 			rw_mesh_set_error(current_line,"Incorrect header section");
 			close(fd);
@@ -621,8 +626,8 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 				&(Mesh->CountOfPoints),
 				&(Mesh->CountOfCells),
 				&n, // Number of element groups
-				&Mesh->CountOfBoundaryConditions, //Number of boundary condition sets
-				&Mesh->Dimension, // Number of coordinate directions (2 or 3)
+				&(Mesh->CountOfBoundaryConditions), //Number of boundary condition sets
+				&(Mesh->Dimension), // Number of coordinate directions (2 or 3)
 				&n // Number of coordinate directions (2 or 3)
 				)!=6){
 			rw_mesh_set_error(current_line,"Incorrect header section");
@@ -630,7 +635,7 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 			return 1;
 		}
 
-		if(Mesh->Dimension!=2 || Mesh->Dimension!=3){
+		if(Mesh->Dimension!=2 && Mesh->Dimension!=3){
 			rw_mesh_set_error(current_line,"Incorrect coordinate directions (dimension)");
 			close(fd);
 			return 1;
@@ -649,7 +654,9 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 
 	//read sections
 	while(read_line_skip_comments_neu(fd,line,&current_line)>=0){
-		k = sscanf(line,"%20s%20s",section_name,section_version);
+		string_empty(section_name,256);
+		string_empty(section_version,256);
+		k = sscanf(line,"%20c%20c",section_name,section_version);
 		if(k!=1 && k!=2){
 			rw_mesh_set_error(current_line,"Incorrect section name");
 			close(fd);
@@ -668,13 +675,13 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 						return 1;
 					}
 					if(Mesh->Dimension==2){
-						if(sscanf(line,"%10d%20lf%20lf\n",&j,Point+0,Point+1)!=2){
+						if(sscanf(line,"%10d%20lf%20lf\n",&j,Point+0,Point+1)!=3){
 							rw_mesh_set_error(current_line,"Incorrect section NODAL COORDINATES");
 							close(fd);
 							return 1;
 						}
 					}else{
-						if(sscanf(line,"%10d%20lf%20lf%20lf\n",&j,Point+0,Point+1,Point+2)!=3){
+						if(sscanf(line,"%10d%20lf%20lf%20lf\n",&j,Point+0,Point+1,Point+2)!=4){
 							rw_mesh_set_error(current_line,"Incorrect section NODAL COORDINATES");
 							close(fd);
 							return 1;
