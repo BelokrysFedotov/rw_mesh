@@ -2,7 +2,7 @@
  * test_off_read.cpp
  *
  *  Created on: 26.06.2013
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <stdlib.h>

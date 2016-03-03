@@ -2,7 +2,7 @@
  * rw_mesh_header.c
  *
  *  Created on: 01.06.2014
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <stdio.h>

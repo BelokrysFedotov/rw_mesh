@@ -3,7 +3,7 @@
  * Фунции работы с форматом plot3d
  *
  *  Created on: 02.08.2013
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <stdio.h>

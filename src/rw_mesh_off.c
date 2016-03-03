@@ -4,7 +4,7 @@
  * Format OFF
  *
  *  Created on: 15.12.2011
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <stdio.h>

@@ -1,0 +1,6 @@
+add_executable(test_read_off test_off_read.cpp)
+add_definitions(-DWORK_DIRECTORY="${CMAKE_SOURCE_DIR}/")
+target_link_libraries (test_read_off ${GLIBS})
+add_test(test_read_off test_read_off)
+#add_test(test_read_off.Test.cube3off test_read_off --gtest_filter Test.cube3off)
+#add_test(test_read_off.Test.octaoff test_read_off --gtest_filter Test.octaoff)

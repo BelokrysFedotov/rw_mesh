@@ -3,7 +3,7 @@
  * Фунции работы с форматом off
  *
  *  Created on: 14.06.2013
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #ifndef RW_MESH_OFF_H_

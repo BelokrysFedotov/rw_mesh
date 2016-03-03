@@ -3,7 +3,7 @@
  * Фунции работы с форматом vtk
  *
  *  Created on: 20.04.2015
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 #ifndef RW_MESH_VTK_H_
 #define RW_MESH_VTK_H_

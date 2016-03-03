@@ -2,7 +2,7 @@
  * read_plot3d_file.c
  *
  *  Created on: 08.08.2015
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <stdlib.h>

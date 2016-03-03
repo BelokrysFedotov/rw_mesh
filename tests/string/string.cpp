@@ -2,7 +2,7 @@
  * readline.c
  *
  *  Created on: 26.06.2013
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <stdlib.h>
@@ -14,7 +14,6 @@ extern "C" {
 }
 
 TEST(Test, in_charset){
-
 	ASSERT_LT(in_charset('a',CHARSET_SPACE), 0);
 	ASSERT_LT(in_charset('0',CHARSET_SPACE), 0);
     ASSERT_LT(in_charset('9',CHARSET_SPACE), 0);
@@ -160,9 +159,6 @@ TEST(Test, string_cut_word){
 	ASSERT_STREQ(string,"");
 	ASSERT_STREQ(word,"");
 }
-
-
-
 
 int main(int argc, char *argv[])
 {

@@ -3,7 +3,7 @@
  * Фунции работы с форматом mesh
  *
  *  Created on: 26.06.2013
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #include <string.h>

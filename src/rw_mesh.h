@@ -2,7 +2,7 @@
  * rw_mesh.h
  *
  *  Created on: 26.06.2013
- *      Author: moric
+ *      Author: Belokrys-Fedotov A.I.
  */
 
 #ifndef RW_MESH_H_

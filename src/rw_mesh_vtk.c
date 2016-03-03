@@ -1,3 +1,11 @@
+/*
+ * rw_mesh_vtk.h
+ * Фунции работы с форматом vtk
+ *
+ *  Created on: 26.06.2013
+ *      Author: Belokrys-Fedotov A.I.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
