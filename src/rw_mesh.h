@@ -21,4 +21,6 @@
 
 #include "rw_mesh_cgns.h"
 
+#include "rw_mesh_neu.h"
+
 #endif /* RW_MESH_H_ */

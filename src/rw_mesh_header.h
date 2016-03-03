@@ -48,4 +48,20 @@ void rw_mesh_set_error(int lineNumber,char*error);
 void rw_mesh_get_error(int*lineNumber,char*error,char*filename);
 void rw_mesh_print_error();
 
+#define RW_MESH_CELL_TYPE_NONE			 0
+#define RW_MESH_CELL_TYPE_TRIANGLE		 5
+#define RW_MESH_CELL_TYPE_POLYGON		 7
+#define RW_MESH_CELL_TYPE_QUAD			 9
+#define RW_MESH_CELL_TYPE_TETRA			10
+#define RW_MESH_CELL_TYPE_VOXEL 		11
+#define RW_MESH_CELL_TYPE_HEXAHEDRON	12
+#define RW_MESH_CELL_TYPE_WEDGE			13
+#define RW_MESH_CELL_TYPE_PYRAMID		14
+
+/**
+ * Размер ячеёки типа CellType
+ * Возвращает -1 для типа RW_MESH_CELL_TYPE_POLYGON, и -2 для неизвестного типа
+ */
+int rw_mesh_cell_type_size(int CellType);
+
 #endif /* RW_MESH_HEADER_H_ */

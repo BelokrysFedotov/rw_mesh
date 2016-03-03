@@ -33,4 +33,19 @@ void rw_mesh_print_error(){
 	printf("Error parsing file '%s' on line %d: %s;\n",__error_filename,__error_lineNumber,__error_comment);
 }
 
-
+/**
+ * Размер ячеёки типа CellType
+ * Возвращает -1 для типа RW_MESH_CELL_TYPE_POLYGON, и -2 для неизвестного типа
+ */
+int rw_mesh_cell_type_size(int CellType){
+	if(CellType==RW_MESH_CELL_TYPE_NONE) return 0;
+	if(CellType==RW_MESH_CELL_TYPE_TRIANGLE) return 3;
+	if(CellType==RW_MESH_CELL_TYPE_POLYGON) return -1;
+	if(CellType==RW_MESH_CELL_TYPE_QUAD) return 4;
+	if(CellType==RW_MESH_CELL_TYPE_TETRA) return 4;
+	if(CellType==RW_MESH_CELL_TYPE_VOXEL) return 8;
+	if(CellType==RW_MESH_CELL_TYPE_HEXAHEDRON) return 8;
+	if(CellType==RW_MESH_CELL_TYPE_WEDGE) return 6;
+	if(CellType==RW_MESH_CELL_TYPE_PYRAMID) return 5;
+	return -2;
+}
