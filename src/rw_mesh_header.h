@@ -49,6 +49,7 @@ void rw_mesh_get_error(int*lineNumber,char*error,char*filename);
 void rw_mesh_print_error();
 
 #define RW_MESH_CELL_TYPE_NONE			 0
+#define RW_MESH_CELL_TYPE_EDGE			 3
 #define RW_MESH_CELL_TYPE_TRIANGLE		 5
 #define RW_MESH_CELL_TYPE_POLYGON		 7
 #define RW_MESH_CELL_TYPE_QUAD			 9

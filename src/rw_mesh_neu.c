@@ -552,10 +552,33 @@ void string_empty(char *line,int length){
 	memset(line,0,length*sizeof(char));
 }
 
+int string_cut_length(char*string,char*word,int length){
+	int i,l,r;
+
+	if(length==0){
+		word[0] = '\0';
+		return 0;
+	}
+
+	for(i=0;i<length && string[i]!='\0';i++){
+		word[i] = string[i];
+	}
+	word[i] = '\0';
+
+	r = (i<length)?1:0;
+
+	for(l=0;string[i]!='\0';i++,l++){
+		string[l] = string[i];
+	}
+	string[l] = '\0';
+
+	return r;
+}
+
 int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 	__save_locale;
 	int current_line;
-	int i,j,k;
+	int i,j,k,s;
 	FILE*fd;
 	REAL3 Point;
 	char line[256],buf1[256],buf2[256];
@@ -564,6 +587,7 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 	int ct;
 	int section_end_skipped;
 #define max_cells_size 8
+	int current_BC;
 
 	neu_mesh_struct_init(Mesh);
 
@@ -634,6 +658,7 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 			close(fd);
 			return 1;
 		}
+		current_BC = 0;
 
 		if(Mesh->Dimension!=2 && Mesh->Dimension!=3){
 			rw_mesh_set_error(current_line,"Incorrect coordinate directions (dimension)");
@@ -698,6 +723,222 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 						Mesh->Points[Mesh->Dimension*i+k] = Point[k];
 				}
 			}
+		}else if(strcmp(section_name,"ELEMENTS/CELLS")==0){
+			if(Mesh->CountOfCells>0){
+				Mesh->Cells = (int*)calloc(Mesh->CountOfCells,max_cells_size*sizeof(int));
+				Mesh->CellSizes = (int*)calloc(Mesh->CountOfCells,sizeof(int));
+				Mesh->CellOffset = (int*)calloc((Mesh->CountOfCells+1),sizeof(int));
+				Mesh->CellTypes = (int*)calloc(Mesh->CountOfCells,sizeof(int));
+
+				Mesh->CellOffset[0] = 0;
+				for(i=0;i<Mesh->CountOfCells;i++){
+
+					if(read_line_skip_comments_neu(fd,line,&current_line)<0){
+						rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS. Not enough lines");
+						close(fd);
+						return 1;
+					}
+
+					// global number of cell
+					string_cut_length(line,buf1,8);
+					if(sscanf(buf1,"%8d",&j)!=1){
+						rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+						close(fd);
+						return 1;
+					}
+
+					// cell type
+					string_cut_length(line,buf1,3);
+					if(sscanf(buf1,"%3d",&ct)!=1){
+						rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+						close(fd);
+						return 1;
+					}
+
+					// cell size
+					string_cut_length(line,buf1,3);
+					if(sscanf(buf1,"%3d",&(Mesh->CellSizes[i]))!=1){
+						rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+						close(fd);
+						return 1;
+					}
+
+					string_cut_length(line,buf1,1);
+
+					switch(ct){
+						case NEU_CELL_TYPE_EDGE:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_EDGE;
+							break;
+
+						case NEU_CELL_TYPE_TRIANGLE:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_TRIANGLE;
+							break;
+
+						case NEU_CELL_TYPE_QUAD:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_QUAD;
+							break;
+
+						case NEU_CELL_TYPE_TETRA:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_TETRA;
+							break;
+
+						case NEU_CELL_TYPE_PYRAMID:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_PYRAMID;
+							break;
+
+						case NEU_CELL_TYPE_WEDGE:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_WEDGE;
+							break;
+
+						case NEU_CELL_TYPE_BRICK:
+							Mesh->CellTypes[i] = RW_MESH_CELL_TYPE_VOXEL;
+							break;
+
+						default:
+							rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS. Unknown cell type");
+							close(fd);
+							return 1;
+							break;
+					}
+
+					s = rw_mesh_cell_type_size(Mesh->CellTypes[i]);
+					Mesh->CellOffset[i+1] = Mesh->CellOffset[i]+s;
+					for(k=0;k<s;k++){
+						if(k>0 && k%7==0){
+							if(read_line_skip_comments_neu(fd,line,&current_line)<0){
+								rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS. Not enough lines");
+								close(fd);
+								return 1;
+							}
+							if(string_cut_length(line,buf1,15)){
+								rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+								close(fd);
+								return 1;
+							}
+						}
+						if(string_cut_length(line,buf1,8)){
+							rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+							close(fd);
+							return 1;
+						}
+
+						if(sscanf(buf1,"%8d",&j)!=1){
+							rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+							close(fd);
+							return 1;
+						}
+						Mesh->Cells[Mesh->CellOffset[i]+k] = j-1;
+					}
+
+					switch(ct){
+						case NEU_CELL_TYPE_PYRAMID:
+							j = Mesh->Cells[Mesh->CellOffset[i]+2];
+							Mesh->Cells[Mesh->CellOffset[i]+2] = Mesh->Cells[Mesh->CellOffset[i]+3];
+							Mesh->Cells[Mesh->CellOffset[i]+3] = j;
+							break;
+
+						case NEU_CELL_TYPE_WEDGE:
+							j = Mesh->Cells[Mesh->CellOffset[i]+1];
+							Mesh->Cells[Mesh->CellOffset[i]+1] = Mesh->Cells[Mesh->CellOffset[i]+2];
+							Mesh->Cells[Mesh->CellOffset[i]+2] = j;
+							j = Mesh->Cells[Mesh->CellOffset[i]+4];
+							Mesh->Cells[Mesh->CellOffset[i]+4] = Mesh->Cells[Mesh->CellOffset[i]+5];
+							Mesh->Cells[Mesh->CellOffset[i]+5] = j;
+							break;
+					}
+				}
+			}
+
+//		}else if(strcmp(section_name,"ELEMENT GROUP")==0){
+			//skip ELEMENT GROUP section
+//		}else if(strcmp(section_name,"APPLICATION DATA")==0){
+			//skip APPLICATION DATA section
+		}else if(strcmp(section_name,"BOUNDARY CONDITIONS")==0){
+			if(!Mesh->CountOfBoundaryConditions){
+				rw_mesh_set_error(current_line,"Incorrect section BOUNDARY CONDITIONS. Count of Boundary Conditions set zero");
+				close(fd);
+				return 1;
+			}
+			if(current_BC>=Mesh->CountOfBoundaryConditions){
+				rw_mesh_set_error(current_line,"Incorrect section BOUNDARY CONDITIONS. Too many Boundary Conditions sections");
+				close(fd);
+				return 1;
+			}
+
+			if(!Mesh->BoundaryConditions){
+				Mesh->BoundaryConditions = (struct neu_boundary_condition_struct*)calloc(Mesh->CountOfBoundaryConditions,sizeof(struct neu_boundary_condition_struct));
+				for(i=0;i<Mesh->CountOfBoundaryConditions;i++){
+					Mesh->BoundaryConditions[i].Condition = 0;
+					Mesh->BoundaryConditions[i].CountOfCells = 0;
+					Mesh->BoundaryConditions[i].Cells = NULL;
+					Mesh->BoundaryConditions[i].Faces = NULL;
+				}
+			}
+
+			//:                         boundary       1     588       0       6
+			//: NAME  ITYPE NENTRY NVALUES [ IBCODE1 IBCODE2 IBCODE3 IBCODE4 IBCODE5]
+			// skip IBCODES
+			if(read_line_skip_comments_neu(fd,line,&current_line)<0){
+				rw_mesh_set_error(current_line,"Incorrect section BOUNDARY CONDITIONS. Not enough lines");
+				close(fd);
+				return 1;
+			}
+
+			string_empty(buf1,256);
+			if(sscanf(line,"%32c%10d%10d%10d",buf1,&n,&n2,&n3)!=4){
+				rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS");
+				close(fd);
+				return 1;
+			}
+			//if boundary name is number
+			if(sscanf(buf1,"%d",&j)==1){
+				Mesh->BoundaryConditions[current_BC].Condition = j;
+			}else{
+				Mesh->BoundaryConditions[current_BC].Condition = current_BC+1;
+			}
+
+			if(n!=1){ //ITYPE element/cell
+				//TODO itype = 0
+				rw_mesh_set_error(current_line,"Incorrect section ELEMENTS/CELLS. ITYPE not equal 1");
+				close(fd);
+				return 1;
+			}
+
+			// n2 Number of data records in boundary-condition set
+			Mesh->BoundaryConditions[current_BC].CountOfCells = n2;
+
+			// n3 Number of values for each data record
+
+			if(Mesh->BoundaryConditions[current_BC].CountOfCells){
+				Mesh->BoundaryConditions[current_BC].Cells = (int*)calloc(Mesh->BoundaryConditions[current_BC].CountOfCells,sizeof(int));
+				Mesh->BoundaryConditions[current_BC].Faces = (int*)calloc(Mesh->BoundaryConditions[current_BC].CountOfCells,sizeof(int));
+
+				for(i=0;i<Mesh->BoundaryConditions[current_BC].CountOfCells;i++){
+					if(read_line_skip_comments_neu(fd,line,&current_line)<0){
+						rw_mesh_set_error(current_line,"Incorrect section BOUNDARY CONDITIONS. Not enough lines");
+						close(fd);
+						return 1;
+					}
+
+					//: ELEM	ELEMENT TYPE	FACE 	[VALUES]
+					if(sscanf(line,"%10d%5d%5d",&(Mesh->BoundaryConditions[current_BC].Cells[i]),&j,
+							&(Mesh->BoundaryConditions[current_BC].Faces[i]))!=3){
+						rw_mesh_set_error(current_line,"Incorrect section BOUNDARY CONDITIONS");
+						close(fd);
+						return 1;
+					}
+
+					Mesh->BoundaryConditions[current_BC].Cells[i] = Mesh->BoundaryConditions[current_BC].Cells[i] - 1;
+					Mesh->BoundaryConditions[current_BC].Faces[i] = Mesh->BoundaryConditions[current_BC].Faces[i] - 1;
+				}
+			}
+			current_BC++;
+
+//		}else if(strcmp(section_name,"FACE CONNECTIVITY")==0){
+			//skip FACE CONNECTIVITY section
+//		}else if(strcmp(section_name,"TIMESTEPDATA")==0){
+			//skip TIMESTEPDATA section
+			// which ended with ENDOFTIMESTEP
 		}else{
 			//skip unknown section
 			while((n=read_line_skip_comments_neu(fd,line,&current_line))>=0 && strcmp(line,"ENDOFSECTION")!=0);
@@ -720,113 +961,6 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 			}
 		}
 	}
-
-
-
-/*
-	}
-	line++;read_line(fd,s); //:ELEMENTS/CELLS 2.3.16
-
-	if(Mesh->CountOfCells>0){
-		Mesh->Cells = (int*)calloc(Mesh->CountOfCells,max_cells_size*sizeof(int));
-		Mesh->CellsMask = (int*)calloc(Mesh->CountOfCells,sizeof(int));
-		Mesh->CellsSizes = (int*)calloc(Mesh->CountOfCells,sizeof(int));
-		Mesh->CellsOffset = (int*)calloc(Mesh->CountOfCells,sizeof(int));
-		Mesh->CellsTypes = (int*)calloc(Mesh->CountOfCells,sizeof(int));
-
-		for(i=0;i<Mesh->CountOfCells;i++){
-
-			fscanf(fd,"%8d",&j);
-			fscanf(fd,"%3d",&ct);
-			fscanf(fd,"%3d ",&Mesh->CellsSizes[i]);
-	    	switch(ct){
-	    		case NEU_CELL_TYPE_TETRA:
-	    			Mesh->CellsTypes[i] = CELL_TYPE_TETRA;
-	    			Mesh->CellsOffset[i] = i*max_cells_size;
-	    			for(k=0;k<4;k++){
-	    				fscanf(fd,"%8d",&j);
-	    				Mesh->Cells[Mesh->CellsOffset[i]+k] = j-1;
-	    			}
-	    			break;
-
-	    		case NEU_CELL_TYPE_PYRAMID:
-	    			Mesh->CellsTypes[i] = CELL_TYPE_PYRAMID;
-	    			Mesh->CellsOffset[i] = i*max_cells_size;
-	    			for(k=0;k<5;k++){
-	    				fscanf(fd,"%8d",&j);
-	    				Mesh->Cells[Mesh->CellsOffset[i]+_cp[k]] = j-1;
-	    			}
-	    			break;
-
-	    		case NEU_CELL_TYPE_WEDGE:
-	    			Mesh->CellsTypes[i] = CELL_TYPE_WEDGE;
-	    			Mesh->CellsOffset[i] = i*max_cells_size;
-	    			for(k=0;k<6;k++){
-	    				fscanf(fd,"%8d",&j);
-	    				Mesh->Cells[Mesh->CellsOffset[i]+_cw[k]] = j-1;
-	    			}
-	    			break;
-
-	    		case NEU_CELL_TYPE_BRICK:
-	    			Mesh->CellsTypes[i] = CELL_TYPE_VOXEL;
-	    			Mesh->CellsOffset[i] = i*max_cells_size;
-	    			for(k=0;k<Mesh->CellsSizes[i];k++){
-	    				fscanf(fd,"%8d",&j);
-	    				Mesh->Cells[Mesh->CellsOffset[i]+k] = j-1;
-	    			}
-	    			break;
-
-	    		default:
-	    			log_write("readUnstructedMeshToNEUFile: unknown cell type %d\n",ct);
-	    			Mesh->CellsTypes[i] = CELL_TYPE_NONE;
-	    			Mesh->CellsOffset[i] = i*max_cells_size;
-	    			break;
-	    	}
-	    	fscanf(fd,"\n");
-	    }
-		line++;read_line(fd,s); //:ENDOFSECTION
-	}
-
-	line++;read_line(fd,s); //:ELEMENT GROUP 2.3.16
-	line++;read_line(fd,s); //:GROUP:          1 ELEMENTS:       6468 MATERIAL:          0 NFLAGS:          1
-	line++;read_line(fd,s); //:group
-	fscanf(fd,"%8d\n",&n);
-	for(i=0,j=0;i<Mesh->CountOfCells;i++,j++){
-		if(j>=10){
-			fscanf(fd,"\n");
-			j=0;
-		}
-		fscanf(fd,"%8d",&n);
-	}
-	fscanf(fd,"\n");
-	line++;read_line(fd,s); //:ENDOFSECTION
-
-	if(Mesh->CountOfBoundaryConditions){
-		Mesh->BoundaryConditions = (struct boundaryCondition*)calloc(Mesh->CountOfBoundaryConditions,sizeof(struct boundaryCondition));
-		for(k=0;k<Mesh->CountOfBoundaryConditions;k++){
-			initBoundaryCondition(&Mesh->BoundaryConditions[k]);
-			line++;read_line(fd,s); //: BOUNDARY CONDITIONS 2.3.16
-			//line++;read_line(fd,s); //:                         boundary       1     588       0       6
-			fscanf(fd,"%s %d %d %d %d\n",s,&n,&n2,&n3,&n4);
-			Mesh->BoundaryConditions[k].CountOfCells = n2;
-			Mesh->BoundaryConditions[k].Condition = k+1;
-			if(Mesh->BoundaryConditions[k].CountOfCells){
-				Mesh->BoundaryConditions[k].Cells = (int*)calloc(Mesh->BoundaryConditions[k].CountOfCells,sizeof(int));
-				Mesh->BoundaryConditions[k].Faces = (int*)calloc(Mesh->BoundaryConditions[k].CountOfCells,sizeof(int));
-
-				for(i=0;i<Mesh->BoundaryConditions[k].CountOfCells;i++){
-					fscanf(fd,"%10d",&n);
-					Mesh->BoundaryConditions[k].Cells[i] = n-1; // cell
-					fscanf(fd,"%5d",&n);
-					fscanf(fd,"%5d",&n);
-					Mesh->BoundaryConditions[k].Faces[i] = n;
-					fscanf(fd,"\n");
-				}
-			}
-			line++;read_line(fd,s); //:ENDOFSECTION
-
-		}
-	}*/
 
 	fclose(fd);
 
