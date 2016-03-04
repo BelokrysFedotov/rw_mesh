@@ -1,12 +1,12 @@
 /*
- * neu.h
+ * rw_mesh_neu.h
  *
  *  Created on: 03.02.2016
  *      Author: Belokrys-Fedotov A.I.
  */
 
-#ifndef NEU_H_
-#define NEU_H_
+#ifndef RW_MESH_NEU_H_
+#define RW_MESH_NEU_H_
 
 #include "rw_mesh_header.h"
 
@@ -158,4 +158,4 @@ int write_format_neu_simplified_uniform(
  */
 int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename);
 
-#endif /* NEU_H_ */
+#endif /* RW_MESH_NEU_H_ */
