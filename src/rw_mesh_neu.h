@@ -12,6 +12,14 @@
 
 #define EXTENTION_NEU "*\.neu"
 
+#define RW_MESH_NEU_USE_CELL_ZERO	0
+#define RW_MESH_NEU_USE_CELL_ONE	1
+#define RW_MESH_NEU_USE_FACE_ZERO	0
+#define RW_MESH_NEU_USE_FACE_ONE 	2
+
+#define RW_MESH_NEU_USE_ZERO		0
+#define RW_MESH_NEU_USE_ONE 		3
+
 /**
  * Стуктура граничного условия
  */
@@ -108,7 +116,7 @@ int neu_mesh_struct_add_boundary_conditions_struct(struct neu_mesh_struct*Mesh, 
 /**
  * Записать сетку Mesh в файл filename в формате neu
  */
-int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename);
+int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename,int flags);
 
 /**
  * Записать сетку в файл filename в формате neu
@@ -130,7 +138,7 @@ int write_format_neu_simplified(
 		int Dimension, int CountOfPoints, REAL*Points,
 		int CountOfCells, int*Cells, int*CellTypes, int*CellSizes, int*CellOffset,
 		int CountOfBoundaryConditions, int*BCNumber,int*BCCountOfCells, int**BCCells,int**BCFaces,
-		char*filename);
+		char*filename,int flags);
 
 /**
  * Записать сетку в файл filename в формате neu
@@ -151,11 +159,11 @@ int write_format_neu_simplified_uniform(
 		int Dimension, int CountOfPoints, REAL*Points,
 		int CountOfCells, int*Cells, int CellType,
 		int CountOfBoundaryConditions, int*BCNumber,int*BCCountOfCells, int**BCCells,int**BCFaces,
-		char*filename);
+		char*filename,int flags);
 
 /**
  * Прочитать сетку в Mesh из файла filename в формате neu
  */
-int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename);
+int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename,int flags);
 
 #endif /* RW_MESH_NEU_H_ */

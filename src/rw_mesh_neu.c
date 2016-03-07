@@ -278,7 +278,7 @@ int neu_mesh_struct_add_boundary_conditions_struct(struct neu_mesh_struct*Mesh, 
 /**
  * Записать сетку Mesh в файл filename в формате neu
  */
-int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
+int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename,int flags){
 	int i,j,k;
 	FILE*fd;
 	char buf[256];
@@ -287,6 +287,14 @@ int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 	float FILE_VERSION = 1.0;
 	char FILE_TIME[] = "";
 	
+	int cell_shift = 1;
+	int face_shift = 1;
+
+	if(flags&RW_MESH_NEU_USE_CELL_ONE)
+		cell_shift = 0;
+	if(flags&RW_MESH_NEU_USE_FACE_ONE)
+		face_shift = 0;
+
 	if(Mesh->Dimension!=2 && Mesh->Dimension!=3){
 		rw_mesh_set_error(0,"Incorrect dimension, must be 2 or 3");
 		return 1;
@@ -330,37 +338,36 @@ int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 					fprintf(fd,"%3d",NEU_CELL_TYPE_TETRA);
 					fprintf(fd,"%3d ",4);
 					for(k=0;k<4;k++)
-						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+k]+1);
+						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+k]+cell_shift);
 					break;
 
 				case RW_MESH_CELL_TYPE_PYRAMID:
 					fprintf(fd,"%3d",NEU_CELL_TYPE_PYRAMID);
 					fprintf(fd,"%3d ",5);
 					for(k=0;k<5;k++)
-						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+_cp[k]]+1);
+						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+_cp[k]]+cell_shift);
 					break;
 
 				case RW_MESH_CELL_TYPE_WEDGE:
 					fprintf(fd,"%3d",NEU_CELL_TYPE_WEDGE);
 					fprintf(fd,"%3d ",6);
 					for(k=0;k<6;k++)
-						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+_cw[k]]+1);
+						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+_cw[k]]+cell_shift);
 					break;
 
 				case RW_MESH_CELL_TYPE_HEXAHEDRON:
 					fprintf(fd,"%3d",NEU_CELL_TYPE_BRICK);
 					fprintf(fd,"%3d ",8);
 					for(k=0;k<8;k++){
-						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+_ch[k]]+1);
+						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+_ch[k]]+cell_shift);
 						if(k==6)fprintf(fd,"\n               ");
 					}
 					break;
-
 				case RW_MESH_CELL_TYPE_VOXEL:
 					fprintf(fd,"%3d",NEU_CELL_TYPE_BRICK);
 					fprintf(fd,"%3d ",8);
 					for(k=0;k<8;k++){
-						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+k]+1);
+						fprintf(fd,"%8d",Mesh->Cells[Mesh->CellOffset[i]+k]+cell_shift);
 						if(k==6)fprintf(fd,"\n               ");
 					}
 
@@ -386,7 +393,7 @@ int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 				fprintf(fd,"\n");
 				j=0;
 			}
-			fprintf(fd,"%8d",i+1);
+			fprintf(fd,"%8d",i+cell_shift);
 		}
 		fprintf(fd,"\n");
 		fprintf(fd,"ENDOFSECTION\n");
@@ -403,27 +410,27 @@ int write_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 				0); // No Element/cell values
 		for(i=0;i<Mesh->BoundaryConditions[k].CountOfCells;i++){
 			j = Mesh->BoundaryConditions[k].Cells[i]; // cell
-			fprintf(fd,"%10d",j+1);
+			fprintf(fd,"%10d",j+cell_shift);
 			switch(Mesh->CellTypes[j]){
 				case RW_MESH_CELL_TYPE_TETRA:
 					fprintf(fd,"%5d",NEU_CELL_TYPE_TETRA);
-					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]);
+					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]+face_shift);
 					break;
 				case RW_MESH_CELL_TYPE_PYRAMID:
 					fprintf(fd,"%5d",NEU_CELL_TYPE_PYRAMID);
-					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]);
+					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]+face_shift);
 					break;
 				case RW_MESH_CELL_TYPE_WEDGE:
 					fprintf(fd,"%5d",NEU_CELL_TYPE_WEDGE);
-					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]);
+					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]+face_shift);
 					break;
 				case RW_MESH_CELL_TYPE_HEXAHEDRON:
 					fprintf(fd,"%5d",NEU_CELL_TYPE_BRICK);
-					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]);
+					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]+face_shift);
 					break;
 				case RW_MESH_CELL_TYPE_VOXEL:
 					fprintf(fd,"%5d",NEU_CELL_TYPE_BRICK);
-					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]);
+					fprintf(fd,"%5d",Mesh->BoundaryConditions[k].Faces[i]+face_shift);
 					break;
 				default:
 					sprintf(buf,"write neu file: unknown cell type %d\n",Mesh->CellTypes[j]);
@@ -461,7 +468,7 @@ int write_format_neu_simplified(
 		int Dimension, int CountOfPoints, REAL*Points,
 		int CountOfCells, int*Cells, int*CellTypes, int*CellSizes, int*CellOffset,
 		int CountOfBoundaryConditions, int*BCNumber,int*BCCountOfCells, int**BCCells,int**BCFaces,
-		char*filename){
+		char*filename,int flags){
 	int r;
 	struct neu_mesh_struct*Mesh;
 
@@ -483,7 +490,7 @@ int write_format_neu_simplified(
 		return r;
 	}
 
-	r = write_format_neu_struct(Mesh,filename);
+	r = write_format_neu_struct(Mesh,filename,flags);
 	neu_mesh_struct_free(Mesh);
 	ffree(Mesh);
 	return r;
@@ -508,7 +515,7 @@ int write_format_neu_simplified_uniform(
 		int Dimension, int CountOfPoints, REAL*Points,
 		int CountOfCells, int*Cells, int CellType,
 		int CountOfBoundaryConditions, int*BCNumber,int*BCCountOfCells, int**BCCells,int**BCFaces,
-		char*filename){
+		char*filename,int flags){
 	int r;
 	struct neu_mesh_struct*Mesh;
 
@@ -530,7 +537,7 @@ int write_format_neu_simplified_uniform(
 		return r;
 	}
 
-	r = write_format_neu_struct(Mesh,filename);
+	r = write_format_neu_struct(Mesh,filename,flags);
 	neu_mesh_struct_free(Mesh);
 	ffree(Mesh);
 	return r;
@@ -575,7 +582,7 @@ int string_cut_length(char*string,char*word,int length){
 	return r;
 }
 
-int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
+int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename,int flags){
 	__save_locale;
 	int current_line;
 	int i,j,k,s;
@@ -588,6 +595,17 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 	int section_end_skipped;
 #define max_cells_size 8
 	int current_BC;
+
+	int cell_shift = 1;
+	int face_shift = 1;
+
+	if(flags&RW_MESH_NEU_USE_CELL_ONE){
+		cell_shift = 0;
+	}
+
+	if(flags&RW_MESH_NEU_USE_FACE_ONE){
+		face_shift = 0;
+	}
 
 	neu_mesh_struct_init(Mesh);
 
@@ -827,7 +845,7 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 							close(fd);
 							return 1;
 						}
-						Mesh->Cells[Mesh->CellOffset[i]+k] = j-1;
+						Mesh->Cells[Mesh->CellOffset[i]+k] = j-cell_shift;
 					}
 
 					switch(ct){
@@ -928,8 +946,8 @@ int read_format_neu_struct(struct neu_mesh_struct*Mesh, char*filename){
 						return 1;
 					}
 
-					Mesh->BoundaryConditions[current_BC].Cells[i] = Mesh->BoundaryConditions[current_BC].Cells[i] - 1;
-					Mesh->BoundaryConditions[current_BC].Faces[i] = Mesh->BoundaryConditions[current_BC].Faces[i] - 1;
+					Mesh->BoundaryConditions[current_BC].Cells[i] = Mesh->BoundaryConditions[current_BC].Cells[i] - cell_shift;
+					Mesh->BoundaryConditions[current_BC].Faces[i] = Mesh->BoundaryConditions[current_BC].Faces[i] - face_shift;
 				}
 			}
 			current_BC++;

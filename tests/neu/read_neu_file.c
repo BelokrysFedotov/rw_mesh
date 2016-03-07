@@ -28,7 +28,7 @@ int main (int argc, char *argv[]) {
 
 	Mesh = (struct neu_mesh_struct*)calloc(1,sizeof(struct neu_mesh_struct));
 
-	rn = read_format_neu_struct(Mesh,filename);
+	rn = read_format_neu_struct(Mesh,filename,RW_MESH_NEU_USE_ZERO);
 
 	if(rn){
 		rw_mesh_print_error();
