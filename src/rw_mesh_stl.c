@@ -317,6 +317,45 @@ int read_format_stl_simplified(
 			INT3**Faces,
 			REAL3**FaceNormals,
 			char*filename){
+
+	int countOfFaces,i,k;
+	REAL3* faceVertexes;
+	REAL3* faceNormals;
+
+	if(read_format_stl(&countOfFaces,&faceVertexes,&faceNormals,filename)){
+		return 1;
+	}
+
+	if(countOfFaces==0){
+		if(CountOfPoints) *CountOfPoints = 0;
+		if(Points) *Points = NULL;
+		if(CountOfFaces) *CountOfFaces = 0;
+		if(Faces) *Faces = NULL;
+		if(FaceNormals) *FaceNormals  = NULL;
+		return 0;
+	}
+
+	if(CountOfPoints)
+		*CountOfPoints = countOfFaces*9;
+	if(Points){
+		*Points = (REAL3*)faceVertexes;
+	}else{
+		ffree(faceVertexes);
+	}
+	if(CountOfFaces)
+		*CountOfFaces = countOfFaces;
+	if(Faces){
+		*Faces = (INT3*)calloc(countOfFaces,sizeof(INT3));
+		for(i=0;i<countOfFaces;i++)
+			for(k=0;k<3;k++)
+				(*Faces)[i][k] = i*3+k;
+	}
+	if(FaceNormals){
+		*FaceNormals = faceVertexes;
+	}else{
+		ffree(faceNormals);
+	}
+
 	return 1;
 }
 
