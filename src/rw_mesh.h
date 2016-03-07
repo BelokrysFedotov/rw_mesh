@@ -23,4 +23,6 @@
 
 #include "rw_mesh_neu.h"
 
+#include "rw_mesh_stl.h"
+
 #endif /* RW_MESH_H_ */

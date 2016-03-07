@@ -1,0 +1,11 @@
+add_executable (read_stl_file read_stl_file.c)
+target_link_libraries (read_stl_file ${LIBS})
+add_test (test_read_stl_1 read_stl_file ../../../files/stl/cube.stl)
+add_test (test_read_stl_2 read_stl_file ../../../files/stl/teapot.stl)
+add_test (test_read_stl_3 read_stl_file ../../../files/stl/Q.STL)
+add_test (test_read_stl_4 read_stl_file ../../../files/stl/A.STL)
+
+#add_executable(test_read_neu test_neu_read.cpp)
+#add_definitions(-DWORK_DIRECTORY="${CMAKE_SOURCE_DIR}/")
+#target_link_libraries (test_neu_read ${GLIBS})
+#add_test(test_neu_read test_neu_read)
