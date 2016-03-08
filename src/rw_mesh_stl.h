@@ -30,17 +30,17 @@ int read_format_stl_simplified(
 int write_format_stl(
 		int CountOfFaces,
 		REAL3*FaceVertexes,
-		REAL3 FaceNormals,
+		REAL3*FaceNormals,
 		char*filename,
 		int binary);
 
 
 int write_format_stl_simpifiled(
 		int CountOfPoints,
-		REAL3 Points,
+		REAL3*Points,
 		int CountOfFaces,
 		INT3*Faces,
-		REAL3 FaceNormals,
+		REAL3*FaceNormals,
 		char*filename,
 		int binary);
 
