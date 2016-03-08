@@ -12,10 +12,11 @@ Supportes formats:
 * VTK 4.2 (ascii and binary; only structed and unstructed mesh)
 * Plot3D (only read)
 * CGNS (only write, using cgnslib)
+* Gambit Neutral File Format (*neu)
+* STL (ASCII and Binary)
 
 In future:
 * Tecplot(*.dat/*.tec)
-* Gambit Neutral File Format (*neu)
 * Obj
 * Polygon File Format/Stanford Triangle Format (*.ply)
 * StarCD
