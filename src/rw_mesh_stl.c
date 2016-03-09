@@ -105,7 +105,7 @@ int read_format_stl(
 			}
 
 			if(faces_allocated){
-				if(faces_count >= faces_allocated){
+				if(faces_count+1 >= faces_allocated){
 					faces_allocated += 16;
 					faces_vertex = (REAL3*)realloc(faces_vertex,faces_allocated*3*sizeof(REAL3));
 					faces_normals = (REAL3*)realloc(faces_normals,faces_allocated*sizeof(REAL3));
@@ -167,7 +167,7 @@ int read_format_stl(
 					return 1;
 				}
 
-				if(sscanf(line,"%lf %lf %lf",faces_vertex[faces_count*3+k]+0,faces_normals[faces_count*3+k]+1,faces_normals[faces_count*3+k]+2)!=3){
+				if(sscanf(line,"%lf %lf %lf",faces_vertex[faces_count*3+k]+0,faces_vertex[faces_count*3+k]+1,faces_vertex[faces_count*3+k]+2)!=3){
 					ffree(faces_vertex);
 					ffree(faces_normals);
 					fclose(fd);
@@ -193,6 +193,7 @@ int read_format_stl(
 				rw_mesh_set_error(current_line,"it's must be 'endloop'");
 				return 1;
 			}
+			faces_count++;
 
 			current_line++;
 			if(read_line_trim(fd,line)<0){
