@@ -260,7 +260,7 @@ int read_format_stl(
 		faces_count = uint32;
 		faces_allocated = faces_count;
 		faces_normals = (REAL3*)calloc(faces_count,sizeof(REAL3));
-		faces_vertex = (REAL3*)calloc(faces_count,sizeof(REAL3));
+		faces_vertex = (REAL3*)calloc(faces_count*3,sizeof(REAL3));
 
 		for(i=0;i<faces_count;i++){
 			for(k=0;k<3;k++){
